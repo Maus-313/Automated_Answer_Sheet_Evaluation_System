@@ -12,9 +12,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
     }
 
+    // Attach private system instruction from env without exposing it client-side
+    const systemInstruction = process.env.CUSTOM_PROMPT || "";
+    const combinedPrompt = systemInstruction
+      ? `${systemInstruction}\n\nUser prompt: ${prompt}`
+      : prompt;
+
     const res = await ai.models.generateContent({
       model: "gemini-2.0-flash-001",
-      contents: prompt,
+      contents: combinedPrompt,
     });
 
     // .text contains the plain text answer
