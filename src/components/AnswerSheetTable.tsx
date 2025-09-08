@@ -3,15 +3,21 @@
 import { useEffect, useMemo, useState } from "react";
 
 export type AnswerSheet = {
-  id: string;
   rollNo: string;
   name: string;
   slot: string;
-  examDate: string; // ISO string from API
-  examType: string;
-  answers: unknown;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
+  examType: "CAT" | "FAT" | string;
+  totalMarks: number;
+  answer1?: number | null;
+  answer2?: number | null;
+  answer3?: number | null;
+  answer4?: number | null;
+  answer5?: number | null;
+  answer6?: number | null;
+  answer7?: number | null;
+  answer8?: number | null;
+  answer9?: number | null;
+  answer10?: number | null;
 };
 
 function fmt(dt: string) {
@@ -51,15 +57,21 @@ export default function AnswerSheetTable() {
     () => (
       <thead>
         <tr className="border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
-          <th className="px-3 py-2 text-left text-sm font-medium">ID</th>
           <th className="px-3 py-2 text-left text-sm font-medium">Roll No</th>
           <th className="px-3 py-2 text-left text-sm font-medium">Name</th>
           <th className="px-3 py-2 text-left text-sm font-medium">Slot</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Exam Date</th>
           <th className="px-3 py-2 text-left text-sm font-medium">Exam Type</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Answers</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Created</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Updated</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Total Marks</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Ans 1</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Ans 2</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Ans 3</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Ans 4</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Ans 5</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Ans 6</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Ans 7</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Ans 8</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Ans 9</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Ans 10</th>
         </tr>
       </thead>
     ),
@@ -83,25 +95,22 @@ export default function AnswerSheetTable() {
             {header}
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-b border-black/5 dark:border-white/5">
-                  <td className="px-3 py-2 align-top break-all">{r.id}</td>
-                  <td className="px-3 py-2 align-top">{r.rollNo}</td>
+                <tr key={r.rollNo} className="border-b border-black/5 dark:border-white/5">
+                  <td className="px-3 py-2 align-top break-all">{r.rollNo}</td>
                   <td className="px-3 py-2 align-top">{r.name}</td>
                   <td className="px-3 py-2 align-top">{r.slot}</td>
-                  <td className="px-3 py-2 align-top">{fmt(r.examDate)}</td>
                   <td className="px-3 py-2 align-top">{r.examType}</td>
-                  <td className="px-3 py-2 align-top whitespace-pre-wrap">
-                    {(() => {
-                      try {
-                        const s = JSON.stringify(r.answers, null, 2);
-                        return s.length > 400 ? s.slice(0, 400) + "…" : s;
-                      } catch {
-                        return String(r.answers);
-                      }
-                    })()}
-                  </td>
-                  <td className="px-3 py-2 align-top">{fmt(r.createdAt)}</td>
-                  <td className="px-3 py-2 align-top">{fmt(r.updatedAt)}</td>
+                  <td className="px-3 py-2 align-top">{r.totalMarks}</td>
+                  <td className="px-3 py-2 align-top">{r.answer1 ?? "-"}</td>
+                  <td className="px-3 py-2 align-top">{r.answer2 ?? "-"}</td>
+                  <td className="px-3 py-2 align-top">{r.answer3 ?? "-"}</td>
+                  <td className="px-3 py-2 align-top">{r.answer4 ?? "-"}</td>
+                  <td className="px-3 py-2 align-top">{r.answer5 ?? "-"}</td>
+                  <td className="px-3 py-2 align-top">{r.answer6 ?? "-"}</td>
+                  <td className="px-3 py-2 align-top">{r.answer7 ?? "-"}</td>
+                  <td className="px-3 py-2 align-top">{r.answer8 ?? "-"}</td>
+                  <td className="px-3 py-2 align-top">{r.answer9 ?? "-"}</td>
+                  <td className="px-3 py-2 align-top">{r.answer10 ?? "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -111,4 +120,3 @@ export default function AnswerSheetTable() {
     </section>
   );
 }
-

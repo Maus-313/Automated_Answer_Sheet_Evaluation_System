@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -14,16 +13,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model AnswerSheet {
-  id        String   @id @default(uuid()) @db.Uuid
-  rollNo    String
-  name      String
-  slot      String   // e.g. "CAT1", "FAT"
-  examDate  DateTime
-  examType  String   // optional: CAT/FAT/Final etc.
-  answers   Json     // store all answers in one JSON blob for now
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Restrict exam type to CAT or FAT
+enum ExamType {
+  CAT
+  FAT
+}
 
-  @@index([rollNo, slot])
+model AnswerSheet {
+  // Use Roll Number as the primary identifier (unique)
+  rollNo     String   @id
+  name       String
+  slot       String
+  examType   ExamType
+  totalMarks Int
+
+  // Answers 1..10 (0..10); 6..10 nullable for CAT
+  answer1  Int?
+  answer2  Int?
+  answer3  Int?
+  answer4  Int?
+  answer5  Int?
+  answer6  Int?
+  answer7  Int?
+  answer8  Int?
+  answer9  Int?
+  answer10 Int?
 }

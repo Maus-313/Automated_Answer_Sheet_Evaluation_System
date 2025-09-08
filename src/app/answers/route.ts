@@ -1,21 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// export const runtime = "nodejs";
+// export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
-    const rows = await prisma.answerSheet.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-
-    // Serialize Dates to ISO for the client
-    const data = rows.map((r: { examDate: { toISOString: () => any; }; createdAt: { toISOString: () => any; }; updatedAt: { toISOString: () => any; }; }) => ({
-      ...r,
-      examDate: r.examDate.toISOString(),
-      createdAt: r.createdAt.toISOString(),
-      updatedAt: r.updatedAt.toISOString(),
-    }));
-
-    return NextResponse.json({ items: data });
+    const rows = await prisma.answerSheet.findMany();
+    return NextResponse.json({ items: rows });
   } catch (err: any) {
     console.error("GET /answers error", err);
     return NextResponse.json(
@@ -24,4 +16,3 @@ export async function GET() {
     );
   }
 }
-
