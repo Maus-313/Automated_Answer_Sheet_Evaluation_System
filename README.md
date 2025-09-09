@@ -34,3 +34,38 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## OCR via Google Cloud Vision
+
+This project includes an OCR example that extracts text from images using Google Cloud Vision.
+
+- API route: `src/app/api/vision-ocr/route.ts`
+- Client component: `src/components/ImageOcr.tsx`
+
+Setup:
+- Enable the Vision API in your Google Cloud project.
+- Add an API key to `.env.local`:
+
+```
+GOOGLE_CLOUD_VISION_API_KEY=your_key_here
+```
+
+Usage:
+- Import and render the component in a page, for example in `src/app/page.tsx`:
+
+```tsx
+import ImageOcr from "@/components/ImageOcr";
+
+export default function Page() {
+  return (
+    <main style={{ padding: 24 }}>
+      <h1>OCR Demo</h1>
+      <ImageOcr />
+    </main>
+  );
+}
+```
+
+Notes:
+- The dev build indicator shown during development cannot be disabled in Next 15; it won’t show in production (`npm run build && npm run start`).
+- Images are read locally in the browser, converted to base64, and sent to the API; nothing is stored server-side.
