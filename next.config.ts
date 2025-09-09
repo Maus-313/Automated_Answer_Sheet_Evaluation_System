@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Next 15: devIndicators is removed; keep config minimal
+  devIndicators: false
 };
 
 export default nextConfig;
