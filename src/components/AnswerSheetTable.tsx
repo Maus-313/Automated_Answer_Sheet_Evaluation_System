@@ -57,7 +57,7 @@ export default function AnswerSheetTable() {
     () => (
       <thead>
         <tr className="border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
-          <th className="px-3 py-2 text-left text-sm font-medium">Roll No</th>
+          <th className="px-3 py-2 text-left text-sm font-medium whitespace-nowrap">Roll No</th>
           <th className="px-3 py-2 text-left text-sm font-medium">Name</th>
           <th className="px-3 py-2 text-left text-sm font-medium">Slot</th>
           <th className="px-3 py-2 text-left text-sm font-medium">Exam Type</th>
@@ -81,7 +81,7 @@ export default function AnswerSheetTable() {
   return (
     <section className="w-full flex flex-col gap-3">
       <h2 className="text-lg font-semibold">Answer Sheets</h2>
-      <div className="w-full overflow-auto rounded-md border border-black/10 dark:border-white/20">
+      <div className="w-full rounded-md border border-black/10 dark:border-white/20">
         {rowsLoading ? (
           <div className="px-3 py-2 text-sm">Loading...</div>
         ) : rowsError ? (
@@ -96,7 +96,7 @@ export default function AnswerSheetTable() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.rollNo} className="border-b border-black/5 dark:border-white/5">
-                  <td className="px-3 py-2 align-top break-all">{r.rollNo}</td>
+                  <td className="px-3 py-2 align-top whitespace-nowrap">{r.rollNo}</td>
                   <td className="px-3 py-2 align-top">{r.name}</td>
                   <td className="px-3 py-2 align-top">{r.slot}</td>
                   <td className="px-3 py-2 align-top">{r.examType}</td>
