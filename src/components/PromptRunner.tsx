@@ -79,6 +79,37 @@ export default function PromptRunner() {
       >
         {loading ? "Running..." : "Run Prompt"}
       </button>
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            setError(null);
+            const codeMatch = text.match(/```[a-zA-Z]*\n([\s\S]*?)```/);
+            const code = codeMatch ? codeMatch[1] : text;
+            if (!code || !code.trim()) {
+              setError("No code found to execute");
+              return;
+            }
+            setLoading(true);
+            const res = await fetch("/ai/run-prisma", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ code }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data?.error || "Failed to apply update");
+            setText((prev) => `${prev}\n\n---\nResult: ${JSON.stringify(data, null, 2)}`);
+          } catch (e: any) {
+            setError(e?.message || "Failed to apply update");
+          } finally {
+            setLoading(false);
+          }
+        }}
+        disabled={loading || !text}
+        className="w-fit mx-auto rounded-md bg-purple-600 disabled:bg-purple-300 text-white px-4 py-2 text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+      >
+        Run DB Update
+      </button>
 
       <button
         type="button"
