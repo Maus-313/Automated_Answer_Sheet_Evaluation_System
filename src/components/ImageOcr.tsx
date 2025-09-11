@@ -102,6 +102,13 @@ export default function ImageOcr() {
     return results.map((r, i) => `# Image ${i + 1}\n${r.text}`.trim()).join("\n\n---\n\n");
   }, [results]);
 
+  // Broadcast combined text so other components (e.g., PromptRunner) can consume it
+  const lastEmittedRef = useRef<string>("");
+  if (typeof window !== "undefined" && combinedText !== lastEmittedRef.current) {
+    lastEmittedRef.current = combinedText;
+    window.dispatchEvent(new CustomEvent("ocr-text-changed", { detail: { text: combinedText } }));
+  }
+
   return (
     <div className="grid gap-4">
       {/* Output box (TOP) */}
