@@ -39,3 +39,60 @@ model AnswerSheet {
   answer9  Int?
   answer10 Int?
 }
+
+// Question paper and questions for a given exam/slot
+// Simple QuestionPaper with up to 10 questions (strings)
+model QuestionPaper {
+  id         String   @id @default(cuid())
+  subject    String
+  slot       String
+  courseCode String
+  examType   ExamType
+
+  // Up to 10 questions; for CAT use 1..5, for FAT use 1..10
+  question1  String?
+  question2  String?
+  question3  String?
+  question4  String?
+  question5  String?
+  question6  String?
+  question7  String?
+  question8  String?
+  question9  String?
+  question10 String?
+
+  // Avoid duplicates for the same paper context
+  @@unique([courseCode, slot, examType])
+}
+
+// Simple MarkingScheme with up to 10 items (marks + optional criteria)
+model MarkingScheme {
+  id         String @id @default(cuid())
+  courseCode String
+  examType   ExamType
+
+  // For CAT use 1..5, for FAT use 1..10
+  mark1      Int?
+  criteria1  String?
+  mark2      Int?
+  criteria2  String?
+  mark3      Int?
+  criteria3  String?
+  mark4      Int?
+  criteria4  String?
+  mark5      Int?
+  criteria5  String?
+  mark6      Int?
+  criteria6  String?
+  mark7      Int?
+  criteria7  String?
+  mark8      Int?
+  criteria8  String?
+  mark9      Int?
+  criteria9  String?
+  mark10     Int?
+  criteria10 String?
+
+  // One scheme per course+exam type
+  @@unique([courseCode, examType])
+}
