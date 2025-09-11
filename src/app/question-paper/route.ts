@@ -6,35 +6,39 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const qp = await prisma.questionPaper.findFirst();
-    if (!qp) return NextResponse.json({ item: null });
+    const qps = await prisma.questionPaper.findMany({
+      orderBy: [{ courseCode: "asc" }, { slot: "asc" }, { examType: "asc" }],
+    });
 
-    const questionsRaw = [
-      qp.question1,
-      qp.question2,
-      qp.question3,
-      qp.question4,
-      qp.question5,
-      qp.question6,
-      qp.question7,
-      qp.question8,
-      qp.question9,
-      qp.question10,
-    ];
+    if (!qps || qps.length === 0) return NextResponse.json({ items: [] });
 
-    const questions = questionsRaw
-      .map((text, idx) => ({ no: idx + 1, text }))
-      .filter((q) => typeof q.text === "string" && q.text.trim().length > 0);
+    const items = qps.map((qp) => {
+      const questionsRaw = [
+        qp.question1,
+        qp.question2,
+        qp.question3,
+        qp.question4,
+        qp.question5,
+        qp.question6,
+        qp.question7,
+        qp.question8,
+        qp.question9,
+        qp.question10,
+      ];
+      const questions = questionsRaw
+        .map((text, idx) => ({ no: idx + 1, text }))
+        .filter((q) => typeof q.text === "string" && q.text.trim().length > 0);
 
-    return NextResponse.json({
-      item: {
+      return {
         subject: qp.subject,
         slot: qp.slot,
         courseCode: qp.courseCode,
         examType: qp.examType,
         questions,
-      },
+      };
     });
+
+    return NextResponse.json({ items });
   } catch (err: any) {
     console.error("GET /question-paper error", err);
     return NextResponse.json(
