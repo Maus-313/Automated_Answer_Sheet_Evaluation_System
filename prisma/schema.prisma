@@ -19,7 +19,8 @@ enum ExamType {
   FAT
 }
 
-model AnswerSheet {
+// MarkingSheet: stores evaluated answers/marks per answer (ints)
+model MarkingSheet {
   // Use Roll Number as the primary identifier (unique)
   rollNo     String   @id
   name       String
@@ -38,6 +39,28 @@ model AnswerSheet {
   answer8  Int?
   answer9  Int?
   answer10 Int?
+}
+
+// AnswerSheet: stores raw answers as strings (nullable)
+model AnswerSheet {
+  // Use Roll Number as the primary identifier (unique)
+  rollNo     String   @id
+  name       String
+  slot       String
+  examType   ExamType
+  totalMarks Int
+
+  // Answers 1..10 (0..10); text answers, 6..10 nullable for CAT
+  answer1  String?
+  answer2  String?
+  answer3  String?
+  answer4  String?
+  answer5  String?
+  answer6  String?
+  answer7  String?
+  answer8  String?
+  answer9  String?
+  answer10 String?
 }
 
 // Question paper and questions for a given exam/slot

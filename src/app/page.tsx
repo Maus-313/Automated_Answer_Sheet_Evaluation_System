@@ -4,6 +4,7 @@ import MarkingScheme from "@/components/MarkingScheme";
 import ImageOcr from "@/components/ImageOcr";
 import { Prompt } from "next/font/google";
 import PromptRunner from "@/components/PromptRunner";
+import MarkSheetTable from "@/components/MarkSheetTable";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
         <AnswerSheetTable />
         {/* <PromptRunner/> */}
         {/* <ImageOcr/> */}
+        <MarkSheetTable/>
       </main>
     </div>
   );
