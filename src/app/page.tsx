@@ -12,8 +12,8 @@ export default function Home() {
         <QuestionPaper />
         <MarkingScheme />
         <AnswerSheetTable />
-        <PromptRunner/>
-        <ImageOcr/>
+        {/* <PromptRunner/> */}
+        {/* <ImageOcr/> */}
       </main>
     </div>
   );

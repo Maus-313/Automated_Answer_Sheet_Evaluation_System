@@ -4,9 +4,26 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const ms = await prisma.markingScheme.findFirst();
+    const { searchParams } = new URL(req.url);
+    const slot = searchParams.get("slot")?.trim();
+    let ms: any = null;
+    if (slot) {
+      try {
+        // Cast to any to tolerate older Prisma Client types until migration is applied
+        ms = await prisma.markingScheme.findFirst({ where: { slot } as any });
+      } catch (e: any) {
+        const msg = String(e?.message ?? "");
+        if (msg.includes("Unknown argument `slot`")) {
+          // Schema not migrated yet; report no record instead of error
+          return NextResponse.json({ item: null });
+        }
+        throw e;
+      }
+    } else {
+      ms = await prisma.markingScheme.findFirst();
+    }
     if (!ms) return NextResponse.json({ item: null });
 
     const marks = [
@@ -25,6 +42,7 @@ export async function GET() {
     return NextResponse.json({
       item: {
         courseCode: ms.courseCode,
+        slot: ms.slot,
         examType: ms.examType,
         items,
       },

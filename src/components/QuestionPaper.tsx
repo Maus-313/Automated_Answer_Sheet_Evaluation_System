@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+const SLOTS = [
+  "A1","A2","B1","B2","C1","C2","D1","D2","E1","E2","F1","F2","G1","G2",
+];
+
 type Item = {
   subject: string;
   slot: string;
@@ -15,6 +19,7 @@ export default function QuestionPaper() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [slotFilter, setSlotFilter] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -36,18 +41,39 @@ export default function QuestionPaper() {
     };
   }, []);
 
+  const slots = SLOTS;
+  const filtered = (items ?? []).filter((i) => (slotFilter ? i.slot === slotFilter : true));
+
   return (
     <section className="w-full flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">Question Papers</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">Question Papers</h2>
+        <div className="flex items-center gap-2">
+          <label htmlFor="qp-slot" className="text-sm text-muted-foreground">Slot</label>
+          <select
+            id="qp-slot"
+            className="text-sm rounded-md border border-black/10 dark:border-white/20 px-2 py-1 pr-7 bg-white text-black dark:bg-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/40"
+            value={slotFilter}
+            onChange={(e) => setSlotFilter(e.target.value)}
+          >
+            <option value="">All</option>
+            {slots.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+      </div>
       {loading ? (
         <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm">Loading...</div>
       ) : error ? (
         <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">{error}</div>
       ) : !items || items.length === 0 ? (
-        <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm">No record found</div>
+        <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm">No Record Found</div>
+      ) : filtered.length === 0 ? (
+        <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm">No Record Found</div>
       ) : (
         <div className="grid gap-3 w-full">
-          {items.map((it, idx) => {
+          {filtered.map((it, idx) => {
             const key = `${it.courseCode}-${it.slot}-${it.examType ?? ""}-${idx}`;
             const isOpen = !!open[key];
             return (

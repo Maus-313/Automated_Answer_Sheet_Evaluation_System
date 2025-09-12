@@ -4,9 +4,12 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const slot = searchParams.get("slot")?.trim();
     const qps = await prisma.questionPaper.findMany({
+      where: slot ? { slot } : undefined,
       orderBy: [{ courseCode: "asc" }, { slot: "asc" }, { examType: "asc" }],
     });
 

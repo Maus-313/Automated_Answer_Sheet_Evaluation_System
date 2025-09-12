@@ -69,6 +69,7 @@ model QuestionPaper {
 model MarkingScheme {
   id         String @id @default(cuid())
   courseCode String
+  slot       String
   examType   ExamType
 
   // For CAT use 1..5, for FAT use 1..10
@@ -93,6 +94,6 @@ model MarkingScheme {
   mark10     Int?
   criteria10 String?
 
-  // One scheme per course+exam type
-  @@unique([courseCode, examType])
+  // One scheme per course+slot+exam type
+  @@unique([courseCode, slot, examType])
 }

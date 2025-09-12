@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+const SLOTS = [
+  "A1","A2","B1","B2","C1","C2","D1","D2","E1","E2","F1","F2","G1","G2",
+];
+
 type MarkSchemeItem = { no: number; marks: number; criteria?: string };
 type MarkingSchemeProps = Partial<{
   courseCode: string;
@@ -13,12 +17,14 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
   const hasProps = !!props?.courseCode || !!props?.items?.length;
   const [item, setItem] = useState<{
     courseCode?: string;
+    slot?: string;
     examType?: "CAT" | "FAT" | string;
     items: MarkSchemeItem[];
   } | null>(hasProps ? { courseCode: props.courseCode, examType: props.examType, items: props.items || [] } : null);
 
   const [loading, setLoading] = useState(!hasProps);
   const [error, setError] = useState<string | null>(null);
+  const [slot, setSlot] = useState<string>("");
 
   useEffect(() => {
     if (hasProps) return;
@@ -26,7 +32,14 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch("/marking-scheme", { cache: "no-store" });
+        if (!slot) {
+          // Wait for a slot selection
+          setItem(null);
+          setLoading(false);
+          return;
+        }
+        const qs = `?slot=${encodeURIComponent(slot)}`;
+        const res = await fetch(`/marking-scheme${qs}`, { cache: "no-store" });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || "Failed to load marking scheme");
         if (!cancelled) setItem(data?.item ?? null);
@@ -39,16 +52,35 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
     return () => {
       cancelled = true;
     };
-  }, [hasProps]);
+  }, [hasProps, slot]);
 
   const courseCode = item?.courseCode ?? props.courseCode;
+  const slotValue = item?.slot ?? slot;
   const examType = item?.examType ?? props.examType;
   const items = item?.items ?? props.items ?? [];
   const total = useMemo(() => items.reduce((sum, i) => sum + (i.marks || 0), 0), [items]);
 
   return (
     <section className="w-full flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">Marking Scheme</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">Marking Scheme</h2>
+        {!hasProps ? (
+          <div className="flex items-center gap-2">
+            <label htmlFor="ms-slot" className="text-sm text-muted-foreground">Slot</label>
+            <select
+              id="ms-slot"
+              className="text-sm rounded-md border border-black/10 dark:border-white/20 px-2 py-1 pr-7 bg-white text-black dark:bg-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/40"
+              value={slot}
+              onChange={(e) => setSlot(e.target.value)}
+            >
+              <option value="">Select</option>
+              {SLOTS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+      </div>
       {loading || error || !item && !hasProps ? (
         <div className="w-full rounded-md border border-black/10 dark:border-white/20">
           {loading ? (
@@ -56,7 +88,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
           ) : error ? (
             <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400">{error}</div>
           ) : (
-            <div className="px-3 py-2 text-sm">No record found</div>
+            <div className="px-3 py-2 text-sm">No Record Found</div>
           )}
         </div>
       ) : (
@@ -66,6 +98,12 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
               <div className="text-muted-foreground">Course Code</div>
               <div className="font-medium">{courseCode}</div>
             </div>
+            {slotValue ? (
+              <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
+                <div className="text-muted-foreground">Slot</div>
+                <div className="font-medium">{slotValue}</div>
+              </div>
+            ) : null}
             {examType ? (
               <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
                 <div className="text-muted-foreground">Exam Type</div>

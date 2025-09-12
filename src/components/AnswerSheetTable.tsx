@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+const SLOTS = [
+  "A1","A2","B1","B2","C1","C2","D1","D2","E1","E2","F1","F2","G1","G2",
+];
+
 export type AnswerSheet = {
   rollNo: string;
   name: string;
@@ -32,6 +36,7 @@ export default function AnswerSheetTable() {
   const [rows, setRows] = useState<AnswerSheet[] | null>(null);
   const [rowsLoading, setRowsLoading] = useState(true);
   const [rowsError, setRowsError] = useState<string | null>(null);
+  const [slotFilter, setSlotFilter] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -80,21 +85,37 @@ export default function AnswerSheetTable() {
 
   return (
     <section className="w-full flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">Answer Sheets</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">Answer Sheets</h2>
+        <div className="flex items-center gap-2">
+          <label htmlFor="as-slot" className="text-sm text-muted-foreground">Slot</label>
+          <select
+            id="as-slot"
+            className="text-sm rounded-md border border-black/10 dark:border-white/20 px-2 py-1 pr-7 bg-white text-black dark:bg-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/40"
+            value={slotFilter}
+            onChange={(e) => setSlotFilter(e.target.value)}
+          >
+            <option value="">All</option>
+            {SLOTS.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+      </div>
       <div className="w-full rounded-md border border-black/10 dark:border-white/20">
         {rowsLoading ? (
           <div className="px-3 py-2 text-sm">Loading...</div>
         ) : rowsError ? (
           <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400">{rowsError}</div>
         ) : !rows || rows.length === 0 ? (
-          <div className="px-3 py-2 text-sm">
-            No record found. Use Mobile device to scan the Answer Sheet of VIT AP University
-          </div>
+          <div className="px-3 py-2 text-sm">No Record Found</div>
+        ) : (rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : true)).length === 0 ? (
+          <div className="px-3 py-2 text-sm">No Record Found</div>
         ) : (
           <table className="w-full text-sm">
             {header}
             <tbody>
-              {rows.map((r) => (
+              {(rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : true)).map((r) => (
                 <tr key={r.rollNo} className="border-b border-black/5 dark:border-white/5">
                   <td className="px-3 py-2 align-top whitespace-nowrap">{r.rollNo}</td>
                   <td className="px-3 py-2 align-top">{r.name}</td>
