@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import LoadingDots from "@/components/LoadingDots";
 
 const SLOTS = [
   "A1","A2","B1","B2","C1","C2","D1","D2","E1","E2","F1","F2","G1","G2",
@@ -104,7 +105,7 @@ export default function AnswerSheetTable() {
       </div>
       <div className="w-full rounded-md border border-black/10 dark:border-white/20">
         {rowsLoading ? (
-          <div className="px-3 py-2 text-sm">Loading...</div>
+          <div className="px-3 py-4 flex items-center justify-center"><LoadingDots /></div>
         ) : rowsError ? (
           <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400">{rowsError}</div>
         ) : !slotFilter ? (
