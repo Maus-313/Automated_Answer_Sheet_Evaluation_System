@@ -62,7 +62,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
   const total = useMemo(() => items.reduce((sum, i) => sum + (i.marks || 0), 0), [items]);
 
   return (
-    <section className="w-full flex flex-col gap-3 rounded-xl p-4 border border-black/10 dark:border-white/10 bg-amber-50 dark:bg-amber-900">
+    <section className="w-full flex flex-col gap-3 rounded-xl p-4 bg-gradient-to-b from-amber-50 to-white dark:from-amber-900/70 dark:to-neutral-950 ring-2 ring-amber-200 dark:ring-amber-700/70 shadow-md">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Marking Scheme</h2>
         {!hasProps ? (

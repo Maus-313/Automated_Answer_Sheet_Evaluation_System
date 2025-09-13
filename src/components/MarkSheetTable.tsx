@@ -88,7 +88,7 @@ export default function MarkSheetTable() {
   const filtered = (rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : false));
 
   return (
-    <section className="w-full flex flex-col gap-3 rounded-xl p-4 border border-black/10 dark:border-white/10 bg-violet-50 dark:bg-violet-900">
+    <section className="w-full flex flex-col gap-3 rounded-xl p-4 bg-gradient-to-b from-violet-50 to-white dark:from-violet-900/70 dark:to-neutral-950 ring-2 ring-violet-200 dark:ring-violet-700/70 shadow-md">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Evaluated Mark Sheet</h2>
         <div className="flex items-center gap-2">

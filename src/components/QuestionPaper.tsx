@@ -55,7 +55,7 @@ export default function QuestionPaper() {
   const filtered = (items ?? []).filter((i) => (slotFilter ? i.slot === slotFilter : true));
 
   return (
-    <section className="w-full flex flex-col gap-3 rounded-xl p-4 border border-black/10 dark:border-white/10 bg-blue-50 dark:bg-blue-900">
+    <section className="w-full flex flex-col gap-3 rounded-xl p-4 bg-gradient-to-b from-sky-50 to-white dark:from-sky-900/70 dark:to-neutral-950 ring-2 ring-sky-200 dark:ring-sky-700/70 shadow-md">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Question Papers</h2>
         <div className="flex items-center gap-2">
