@@ -87,7 +87,16 @@ export default function AnswerSheetTable() {
   return (
     <section className="w-full flex flex-col gap-3 rounded-xl p-4 bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-900/70 dark:to-neutral-950 ring-2 ring-emerald-200 dark:ring-emerald-700/70 shadow-md">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Answer Sheets</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Answer Sheets</h2>
+          <button
+            type="button"
+            onClick={() => alert("Add Answer Sheet")}
+            className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-emerald-600 to-teal-600 shadow-md shadow-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/40 hover:scale-[1.02] transition-all"
+          >
+            + Add
+          </button>
+        </div>
         <div className="flex items-center gap-2">
           <label htmlFor="as-slot" className="text-sm text-muted-foreground">Slot</label>
           <select

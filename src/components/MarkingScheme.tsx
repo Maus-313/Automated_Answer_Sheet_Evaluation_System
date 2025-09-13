@@ -64,7 +64,16 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
   return (
     <section className="w-full flex flex-col gap-3 rounded-xl p-4 bg-gradient-to-b from-amber-50 to-white dark:from-amber-900/70 dark:to-neutral-950 ring-2 ring-amber-200 dark:ring-amber-700/70 shadow-md">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Marking Scheme</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Marking Scheme</h2>
+          <button
+            type="button"
+            onClick={() => alert("Add Marking Scheme")}
+            className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-amber-600 to-orange-600 shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-amber-500/40 hover:scale-[1.02] transition-all"
+          >
+            + Add
+          </button>
+        </div>
         {!hasProps ? (
           <div className="flex items-center gap-2">
             <label htmlFor="ms-slot" className="text-sm text-muted-foreground">Slot</label>

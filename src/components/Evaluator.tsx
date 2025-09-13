@@ -20,6 +20,9 @@ type ASRow = {
   slot: string;
   examType: string;
   totalMarks: number;
+  // Optional per-answer marks if present in payload
+  answer1?: number; answer2?: number; answer3?: number; answer4?: number; answer5?: number;
+  answer6?: number; answer7?: number; answer8?: number; answer9?: number; answer10?: number;
 };
 
 type MSItem = {
@@ -49,7 +52,9 @@ export default function Evaluator() {
     qp?: QPItem;
     ms?: MSItem | null;
     as?: ASRow;
+    eval?: { totalGot: number; totalMax: number; breakdown: Array<{ no: number; got: number; max: number }> };
   } | null>(null);
+  const [evaluating, setEvaluating] = useState(false);
 
   // Load QPs and AS for slot
   useEffect(() => {
@@ -210,12 +215,47 @@ export default function Evaluator() {
       <div className="flex justify-end">
         <button
           type="button"
-          disabled={!canEvaluate}
-          onClick={() => setView({ qp: selectedQp, ms, as: selectedAns })}
-          className="inline-flex items-center gap-2 text-sm rounded-md border border-black/10 dark:border-white/20 px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/5 dark:hover:bg-white/10"
+          disabled={!canEvaluate || evaluating}
+          onClick={async () => {
+            if (!selectedQp || !selectedAns) return;
+            setEvaluating(true);
+            // Compute a simple evaluation: sum student's per-answer marks if available; fallback to provided totalMarks
+            const maxByScheme = (ms?.items ?? []).reduce((acc, it) => {
+              acc[it.no] = it.marks ?? 0; return acc; }, {} as Record<number, number>);
+            const answersArr = [
+              selectedAns.answer1, selectedAns.answer2, selectedAns.answer3, selectedAns.answer4, selectedAns.answer5,
+              selectedAns.answer6, selectedAns.answer7, selectedAns.answer8, selectedAns.answer9, selectedAns.answer10,
+            ];
+            let totalMax = (ms?.items ?? []).reduce((s, it) => s + (it.marks || 0), 0);
+            if (!totalMax && typeof selectedAns.totalMarks === 'number') totalMax = selectedAns.totalMarks;
+            const breakdown = answersArr.map((val, idx) => {
+              const no = idx + 1;
+              const max = maxByScheme[no] ?? 0;
+              const got = typeof val === 'number' ? Math.max(0, Math.min(val, max || 1000)) : 0;
+              return { no, got, max };
+            }).filter(b => b.got || b.max);
+            const totalGot = breakdown.length ? breakdown.reduce((s, b) => s + b.got, 0) : (selectedAns.totalMarks ?? 0);
+            // Simulate short processing so the animated state is visible
+            await new Promise(r => setTimeout(r, 450));
+            setView({ qp: selectedQp, ms, as: selectedAns, eval: { totalGot, totalMax, breakdown } });
+            setEvaluating(false);
+          }}
+          className={[
+            "relative inline-flex items-center gap-2 text-sm px-4 py-2 rounded-md",
+            "disabled:opacity-50 disabled:cursor-not-allowed",
+            evaluating ? "cursor-wait" : "",
+            // Modern gradient + glow
+            "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white",
+            "shadow-md shadow-indigo-500/30",
+            "transition-all duration-300",
+            !evaluating ? "hover:shadow-lg hover:shadow-indigo-500/40 hover:scale-[1.02]" : "",
+          ].join(' ')}
         >
-          <Sparkles className="h-4 w-4" />
-          Evaluate
+          <span className="absolute inset-0 rounded-md opacity-0 group-hover:opacity-100 transition-opacity" style={{
+            background: 'radial-gradient(600px circle at var(--x,50%) var(--y,50%), rgba(255,255,255,0.15), transparent 40%)'
+          }} />
+          <Sparkles className={`h-4 w-4 ${evaluating ? 'animate-pulse' : ''}`} />
+          {evaluating ? 'Evaluating…' : 'Evaluate'}
         </button>
       </div>
 
@@ -250,6 +290,22 @@ export default function Evaluator() {
                 </div>
               ) : (
                 <div className="text-xs">No Scheme Found: General Sscheme Applied</div>
+              )}
+            </div>
+            <div>
+              <div className="text-muted-foreground">Evaluation</div>
+              {view.eval ? (
+                <div>
+                  <div className="font-medium">{view.eval.totalGot} / {view.eval.totalMax}</div>
+                  <div className="mt-1 h-2 w-full rounded bg-black/10 dark:bg-white/10 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-500 to-lime-500 animate-[pulse_2s_ease-in-out_infinite]"
+                      style={{ width: `${Math.min(100, Math.round((view.eval.totalGot / (view.eval.totalMax || 1)) * 100))}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs">—</div>
               )}
             </div>
           </div>

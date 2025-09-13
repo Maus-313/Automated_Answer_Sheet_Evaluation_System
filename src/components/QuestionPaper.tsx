@@ -57,7 +57,16 @@ export default function QuestionPaper() {
   return (
     <section className="w-full flex flex-col gap-3 rounded-xl p-4 bg-gradient-to-b from-sky-50 to-white dark:from-sky-900/70 dark:to-neutral-950 ring-2 ring-sky-200 dark:ring-sky-700/70 shadow-md">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Question Papers</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Question Papers</h2>
+          <button
+            type="button"
+            onClick={() => alert("Add Question Paper")}
+            className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-sky-600 to-blue-600 shadow-md shadow-sky-500/30 hover:shadow-lg hover:shadow-sky-500/40 hover:scale-[1.02] transition-all"
+          >
+            + Add
+          </button>
+        </div>
         <div className="flex items-center gap-2">
           <label htmlFor="qp-slot" className="text-sm text-muted-foreground">Slot</label>
           <select

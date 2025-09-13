@@ -1,3 +1,11 @@
+<!-- UI Preview -->
+<p align="center">
+  <img src="docs/assets/ui_preview.png" alt="AASES UI Preview" />
+  <br />
+  <em>UI preview of Automated Answer Sheet Evaluation System</em>
+  <br /><br />
+</p>
+
 This is a [Next.js](https://nextjs.org) project 
 
 ## Getting Started
