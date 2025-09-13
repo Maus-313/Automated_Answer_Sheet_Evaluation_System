@@ -98,3 +98,7 @@ npm run prisma:generate
 ```
 
 3. Start dev and open the app to see the table. If the table is empty, you’ll see a helpful message.
+
+## License
+
+This project is licensed under the MIT License. See `license.md` for details.
