@@ -61,7 +61,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
   const total = useMemo(() => items.reduce((sum, i) => sum + (i.marks || 0), 0), [items]);
 
   return (
-    <section className="w-full flex flex-col gap-3">
+    <section className="w-full flex flex-col gap-3 rounded-xl p-4 border border-black/10 dark:border-white/10 bg-amber-50 dark:bg-amber-900/20">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Marking Scheme</h2>
         {!hasProps ? (
@@ -87,6 +87,8 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
             <div className="px-3 py-2 text-sm">Loading...</div>
           ) : error ? (
             <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400">{error}</div>
+          ) : !slot ? (
+            <div className="px-3 py-2 text-sm">Please Select A Slot</div>
           ) : (
             <div className="px-3 py-2 text-sm">No Record Found</div>
           )}

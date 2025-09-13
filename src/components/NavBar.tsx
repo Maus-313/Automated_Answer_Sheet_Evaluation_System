@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 export default function NavBar() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-black/10 dark:border-white/10 bg-white/80 dark:bg-black/40 backdrop-blur supports-[backdrop-filter]:bg-white/60 supports-[backdrop-filter]:dark:bg-black/30">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      <div className="px-4 sm:px-6">
         <div className="h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/" aria-label="Home" className="flex items-center">

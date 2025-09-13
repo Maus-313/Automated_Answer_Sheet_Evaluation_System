@@ -10,14 +10,16 @@ import { Text } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-8 row-start-2 items-center w-full mx-auto">
-        {/* <QuestionPaper /> */}
-        {/* <MarkingScheme /> */}
-        {/* <AnswerSheetTable /> */}
-        {/* <PromptRunner/> */}
-        {/* <ImageOcr/> */}
-        {/* <MarkSheetTable/> */}
+    <div className="font-sans grid grid-rows-[12px_1fr_12px] items-center justify-items-center min-h-screen p-4 pb-12 gap-6 sm:p-8 sm:pb-14 sm:gap-8">
+      <main className="row-start-2 w-full">
+        <div className="w-full max-w-5xl mx-auto flex flex-col gap-6 sm:gap-8">
+          <QuestionPaper />
+          <MarkingScheme />
+          <AnswerSheetTable />
+          {/* <PromptRunner/> */}
+          {/* <ImageOcr/> */}
+          <MarkSheetTable />
+        </div>
       </main>
     </div>
   );

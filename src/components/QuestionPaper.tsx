@@ -25,8 +25,17 @@ export default function QuestionPaper() {
     let cancelled = false;
     (async () => {
       try {
+        if (!slotFilter) {
+          // Behave like "Select None": don't fetch until a slot is chosen
+          if (!cancelled) {
+            setItems(null);
+            setLoading(false);
+          }
+          return;
+        }
         setLoading(true);
-        const res = await fetch("/question-paper", { cache: "no-store" });
+        const qs = `?slot=${encodeURIComponent(slotFilter)}`;
+        const res = await fetch(`/question-paper${qs}`, { cache: "no-store" });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || "Failed to load question papers");
         if (!cancelled) setItems(Array.isArray(data?.items) ? data.items : []);
@@ -39,13 +48,13 @@ export default function QuestionPaper() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [slotFilter]);
 
   const slots = SLOTS;
   const filtered = (items ?? []).filter((i) => (slotFilter ? i.slot === slotFilter : true));
 
   return (
-    <section className="w-full flex flex-col gap-3">
+    <section className="w-full flex flex-col gap-3 rounded-xl p-4 border border-black/10 dark:border-white/10 bg-blue-50 dark:bg-blue-900/20">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Question Papers</h2>
         <div className="flex items-center gap-2">
@@ -56,7 +65,7 @@ export default function QuestionPaper() {
             value={slotFilter}
             onChange={(e) => setSlotFilter(e.target.value)}
           >
-            <option value="">All</option>
+            <option value="">Select</option>
             {slots.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
@@ -67,6 +76,8 @@ export default function QuestionPaper() {
         <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm">Loading...</div>
       ) : error ? (
         <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">{error}</div>
+      ) : !slotFilter ? (
+        <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm">Please Select A Slot</div>
       ) : !items || items.length === 0 ? (
         <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm">No Record Found</div>
       ) : filtered.length === 0 ? (

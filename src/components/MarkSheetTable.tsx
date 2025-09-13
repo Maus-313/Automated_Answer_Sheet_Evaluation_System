@@ -34,8 +34,16 @@ export default function MarkSheetTable() {
     let cancelled = false;
     (async () => {
       try {
+        if (!slotFilter) {
+          // Behave like "Select None": don't fetch until a slot is chosen
+          if (!cancelled) {
+            setRows(null);
+            setRowsLoading(false);
+          }
+          return;
+        }
         setRowsLoading(true);
-        const qs = slotFilter ? `?slot=${encodeURIComponent(slotFilter)}` : "";
+        const qs = `?slot=${encodeURIComponent(slotFilter)}`;
         const res = await fetch(`/marking-sheets${qs}`, { cache: "no-store" });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || "Failed to load marking sheets");
@@ -76,12 +84,12 @@ export default function MarkSheetTable() {
     []
   );
 
-  const filtered = (rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : true));
+  const filtered = (rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : false));
 
   return (
-    <section className="w-full flex flex-col gap-3">
+    <section className="w-full flex flex-col gap-3 rounded-xl p-4 border border-black/10 dark:border-white/10 bg-violet-50 dark:bg-violet-900/20">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Marking Sheets</h2>
+        <h2 className="text-lg font-semibold">Evaluated Mark Sheet</h2>
         <div className="flex items-center gap-2">
           <label htmlFor="mslot" className="text-sm text-muted-foreground">Slot</label>
           <select
@@ -90,7 +98,7 @@ export default function MarkSheetTable() {
             value={slotFilter}
             onChange={(e) => setSlotFilter(e.target.value)}
           >
-            <option value="">All</option>
+            <option value="">Select</option>
             {SLOTS.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
@@ -102,6 +110,8 @@ export default function MarkSheetTable() {
           <div className="px-3 py-2 text-sm">Loading...</div>
         ) : rowsError ? (
           <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400">{rowsError}</div>
+        ) : !slotFilter ? (
+          <div className="px-3 py-2 text-sm">Please Select A Slot</div>
         ) : !rows || rows.length === 0 ? (
           <div className="px-3 py-2 text-sm">No Record Found</div>
         ) : filtered.length === 0 ? (
@@ -136,4 +146,3 @@ export default function MarkSheetTable() {
     </section>
   );
 }
-
