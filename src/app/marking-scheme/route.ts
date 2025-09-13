@@ -8,11 +8,15 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const slot = searchParams.get("slot")?.trim();
+    const courseCode = searchParams.get("courseCode")?.trim() || undefined;
+    const examType = searchParams.get("examType")?.trim() || undefined;
     let ms: any = null;
-    if (slot) {
+    if (slot || courseCode || examType) {
       try {
         // Cast to any to tolerate older Prisma Client types until migration is applied
-        ms = await prisma.markingScheme.findFirst({ where: { slot } as any });
+        ms = await prisma.markingScheme.findFirst({
+          where: { ...(slot ? { slot } : {}), ...(courseCode ? { courseCode } : {}), ...(examType ? { examType: examType as any } : {}) } as any,
+        });
       } catch (e: any) {
         const msg = String(e?.message ?? "");
         if (msg.includes("Unknown argument `slot`")) {

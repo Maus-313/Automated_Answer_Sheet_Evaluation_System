@@ -5,6 +5,7 @@ import ImageOcr from "@/components/ImageOcr";
 import { Prompt } from "next/font/google";
 import PromptRunner from "@/components/PromptRunner";
 import MarkSheetTable from "@/components/MarkSheetTable";
+import Evaluator from "@/components/Evaluator";
 import Image from "next/image";
 import { Text } from "lucide-react";
 
@@ -18,6 +19,7 @@ export default function Home() {
           <AnswerSheetTable />
           {/* <PromptRunner/> */}
           {/* <ImageOcr/> */}
+          <Evaluator />
           <MarkSheetTable />
         </div>
       </main>
