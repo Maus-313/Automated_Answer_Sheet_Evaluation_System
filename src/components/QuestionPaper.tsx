@@ -55,7 +55,7 @@ export default function QuestionPaper() {
   const filtered = (items ?? []).filter((i) => (slotFilter ? i.slot === slotFilter : true));
 
   return (
-    <section className="w-full flex flex-col gap-3 rounded-xl p-4 border border-black/10 dark:border-white/10 bg-blue-50 dark:bg-blue-900/20">
+    <section className="w-full flex flex-col gap-3 rounded-xl p-4 border border-black/10 dark:border-white/10 bg-blue-50 dark:bg-blue-900">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Question Papers</h2>
         <div className="flex items-center gap-2">
@@ -74,7 +74,7 @@ export default function QuestionPaper() {
         </div>
       </div>
       {loading ? (
-        <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-4 flex items-center justify-center"><LoadingDots /></div>
+        <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm"><LoadingDots /></div>
       ) : error ? (
         <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">{error}</div>
       ) : !slotFilter ? (

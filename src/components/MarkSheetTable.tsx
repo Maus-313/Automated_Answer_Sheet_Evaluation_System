@@ -88,7 +88,7 @@ export default function MarkSheetTable() {
   const filtered = (rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : false));
 
   return (
-    <section className="w-full flex flex-col gap-3 rounded-xl p-4 border border-black/10 dark:border-white/10 bg-violet-50 dark:bg-violet-900/20">
+    <section className="w-full flex flex-col gap-3 rounded-xl p-4 border border-black/10 dark:border-white/10 bg-violet-50 dark:bg-violet-900">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Evaluated Mark Sheet</h2>
         <div className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export default function MarkSheetTable() {
       </div>
       <div className="w-full rounded-md border border-black/10 dark:border-white/20">
         {rowsLoading ? (
-          <div className="px-3 py-4 flex items-center justify-center"><LoadingDots /></div>
+          <div className="px-3 py-2 text-sm"><LoadingDots /></div>
         ) : rowsError ? (
           <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400">{rowsError}</div>
         ) : !slotFilter ? (
