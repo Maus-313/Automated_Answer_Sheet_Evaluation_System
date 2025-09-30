@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import LoadingDots from "@/components/LoadingDots";
+import PromptRunner from "@/components/PromptRunner";
+import ImageOcr from "@/components/ImageOcr";
 
 const SLOTS = [
   "A1","A2","B1","B2","C1","C2","D1","D2","E1","E2","F1","F2","G1","G2",
@@ -26,6 +28,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
   const [loading, setLoading] = useState(!hasProps);
   const [error, setError] = useState<string | null>(null);
   const [slot, setSlot] = useState<string>("");
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     if (hasProps) return;
@@ -68,10 +71,10 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
           <h2 className="text-lg font-semibold">Marking Scheme</h2>
           <button
             type="button"
-            onClick={() => alert("Add Marking Scheme")}
+            onClick={() => setAddOpen((v) => !v)}
             className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-amber-600 to-orange-600 shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-amber-500/40 hover:scale-[1.02] transition-all"
           >
-            + Add
+            {addOpen ? "Close Add" : "+ Add"}
           </button>
         </div>
         {!hasProps ? (
@@ -91,6 +94,28 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
           </div>
         ) : null}
       </div>
+      {addOpen && (
+        <div className="rounded-md border border-black/10 dark:border-white/20 p-3 bg-white/50 dark:bg-neutral-900/30">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">Add Marking Scheme</h3>
+            <button
+              type="button"
+              onClick={() => setAddOpen(false)}
+              className="text-xs rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              Close
+            </button>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="min-w-0">
+              <ImageOcr />
+            </div>
+            <div className="min-w-0">
+              <PromptRunner />
+            </div>
+          </div>
+        </div>
+      )}
       {loading || error || !item && !hasProps ? (
         <div className="w-full rounded-md border border-black/10 dark:border-white/20">
           {loading ? (

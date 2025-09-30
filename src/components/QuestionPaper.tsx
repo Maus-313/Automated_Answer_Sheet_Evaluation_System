@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import LoadingDots from "@/components/LoadingDots";
+import PromptRunner from "@/components/PromptRunner";
+import ImageOcr from "@/components/ImageOcr";
 
 const SLOTS = [
   "A1","A2","B1","B2","C1","C2","D1","D2","E1","E2","F1","F2","G1","G2",
@@ -21,6 +23,7 @@ export default function QuestionPaper() {
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [slotFilter, setSlotFilter] = useState<string>("");
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,10 +64,10 @@ export default function QuestionPaper() {
           <h2 className="text-lg font-semibold">Question Papers</h2>
           <button
             type="button"
-            onClick={() => alert("Add Question Paper")}
+            onClick={() => setAddOpen((v) => !v)}
             className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-sky-600 to-blue-600 shadow-md shadow-sky-500/30 hover:shadow-lg hover:shadow-sky-500/40 hover:scale-[1.02] transition-all"
           >
-            + Add
+            {addOpen ? "Close Add" : "+ Add"}
           </button>
         </div>
         <div className="flex items-center gap-2">
@@ -82,6 +85,28 @@ export default function QuestionPaper() {
           </select>
         </div>
       </div>
+      {addOpen && (
+        <div className="rounded-md border border-black/10 dark:border-white/20 p-3 bg-white/50 dark:bg-neutral-900/30">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">Add Question Paper</h3>
+            <button
+              type="button"
+              onClick={() => setAddOpen(false)}
+              className="text-xs rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              Close
+            </button>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="min-w-0">
+              <ImageOcr />
+            </div>
+            <div className="min-w-0">
+              <PromptRunner />
+            </div>
+          </div>
+        </div>
+      )}
       {loading ? (
         <div className="w-full rounded-md border border-black/10 dark:border-white/20 px-3 py-2 text-sm"><LoadingDots /></div>
       ) : error ? (

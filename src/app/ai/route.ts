@@ -53,6 +53,8 @@ main().finally(() => prisma.$disconnect())
 \`\`\`
 `;
 
+// const SYSTEM_INSTRUCTION = ``;
+
 export async function POST(req: Request) {
   try {
     const { prompt } = await req.json();

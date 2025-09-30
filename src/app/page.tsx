@@ -17,10 +17,10 @@ export default function Home() {
           <QuestionPaper />
           <MarkingScheme />
           <AnswerSheetTable />
-          {/* <PromptRunner/> */}
-          {/* <ImageOcr/> */}
           <Evaluator />
           <MarkSheetTable />
+          {/* <PromptRunner/> */}
+          {/* <ImageOcr/> */}
         </div>
       </main>
     </div>
