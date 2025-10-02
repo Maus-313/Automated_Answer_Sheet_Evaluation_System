@@ -13,10 +13,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Restrict exam type to CAT or FAT
+// Restrict exam type to CAT, FAT, or ASSESSMENT
 enum ExamType {
   CAT
   FAT
+  ASSESSMENT
 }
 
 // MarkingSheet: stores evaluated answers/marks per answer (ints)
@@ -72,7 +73,7 @@ model QuestionPaper {
   examType   ExamType
   totalMarks Int      @default(0)
 
-  // Up to 10 questions; for CAT use 1..5, for FAT use 1..10
+  // Up to 10 questions; for CAT use 1..5, for FAT/ASSESSMENT use 1..10
   question1  String?
   mark1      Int?
   question2  String?
@@ -105,7 +106,7 @@ model MarkingScheme {
   slot       String
   examType   ExamType
 
-  // For CAT use 1..5, for FAT use 1..10
+  // For CAT use 1..5, for FAT/ASSESSMENT use 1..10
   mark1      Int?
   criteria1  String?
   mark2      Int?

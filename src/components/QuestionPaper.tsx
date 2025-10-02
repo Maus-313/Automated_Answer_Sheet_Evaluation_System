@@ -220,6 +220,7 @@ export default function QuestionPaper() {
                           >
                             <option value="CAT">CAT</option>
                             <option value="FAT">FAT</option>
+                            <option value="ASSESSMENT">Assessment/Quiz</option>
                           </select>
                         ) : (
                           <div className="font-medium">{it.examType}</div>

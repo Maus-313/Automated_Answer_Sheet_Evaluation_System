@@ -210,6 +210,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
                 >
                   <option value="CAT">CAT</option>
                   <option value="FAT">FAT</option>
+                  <option value="ASSESSMENT">Assessment/Quiz</option>
                 </select>
               ) : (
                 <div className="font-medium">{examType}</div>
