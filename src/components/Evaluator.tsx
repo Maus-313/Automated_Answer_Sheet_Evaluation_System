@@ -43,7 +43,8 @@ export default function Evaluator() {
   const [answers, setAnswers] = useState<ASRow[] | null>(null);
   const [ansLoading, setAnsLoading] = useState(false);
   const [ansError, setAnsError] = useState<string | null>(null);
-  const [selectedAnsIdx, setSelectedAnsIdx] = useState<string>("");
+  const [selectedAnsRollNos, setSelectedAnsRollNos] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   const [ms, setMs] = useState<MSItem | null>(null);
   const [msLoading, setMsLoading] = useState(false);
@@ -51,8 +52,7 @@ export default function Evaluator() {
   const [view, setView] = useState<{
     qp?: QPItem;
     ms?: MSItem | null;
-    as?: ASRow;
-    eval?: { totalGot: number; totalMax: number; breakdown: Array<{ no: number; got: number; max: number }> };
+    eval?: { evaluated: number; total: number };
   } | null>(null);
   const [evaluating, setEvaluating] = useState(false);
 
@@ -60,7 +60,7 @@ export default function Evaluator() {
   useEffect(() => {
     if (!slot) {
       setQps(null); setAnswers(null);
-      setSelectedQpIdx(""); setSelectedAnsIdx("");
+      setSelectedQpIdx(""); setSelectedAnsRollNos([]); setSelectAll(false);
       return;
     }
     let cancelled = false;
@@ -78,7 +78,7 @@ export default function Evaluator() {
         if (!cancelled) {
           setQps(Array.isArray(qpData?.items) ? qpData.items : []);
           setAnswers(Array.isArray(asData?.items) ? asData.items : []);
-          setSelectedQpIdx(""); setSelectedAnsIdx("");
+          setSelectedQpIdx(""); setSelectedAnsRollNos([]); setSelectAll(false);
         }
       } catch (e: any) {
         if (!cancelled) {
@@ -115,9 +115,9 @@ export default function Evaluator() {
     return () => { cancelled = true; };
   }, [slot, selectedQpIdx]);
 
-  const canEvaluate = !!slot && selectedQpIdx !== "" && selectedAnsIdx !== "";
+  const canEvaluate = !!slot && selectedQpIdx !== "" && selectedAnsRollNos.length > 0;
   const selectedQp = selectedQpIdx !== "" ? qps?.[Number(selectedQpIdx)] : undefined;
-  const selectedAns = selectedAnsIdx !== "" ? answers?.[Number(selectedAnsIdx)] : undefined;
+  const selectedAnswers = answers?.filter(a => selectedAnsRollNos.includes(a.rollNo)) || [];
 
   const qpOptions = useMemo(() => (qps ?? []).map((q, i) => ({
     value: String(i),
@@ -175,7 +175,7 @@ export default function Evaluator() {
         </div>
 
         <div className="rounded-md border border-black/10 dark:border-white/20 p-3">
-          <div className="text-sm font-medium mb-2">Answer Sheet</div>
+          <div className="text-sm font-medium mb-2">Answer Sheets</div>
           {!slot ? (
             <div className="text-sm text-muted-foreground">Please Select A Slot</div>
           ) : ansLoading ? (
@@ -185,16 +185,41 @@ export default function Evaluator() {
           ) : !answers || answers.length === 0 ? (
             <div className="text-sm">No Record Found</div>
           ) : (
-            <select
-              className="w-full text-sm rounded-md border border-black/10 dark:border-white/20 px-2 py-1 bg-white text-black dark:bg-neutral-900 dark:text-white"
-              value={selectedAnsIdx}
-              onChange={(e) => setSelectedAnsIdx(e.target.value)}
-            >
-              <option value="">Select</option>
-              {asOptions.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={selectAll}
+                  onChange={(e) => {
+                    setSelectAll(e.target.checked);
+                    setSelectedAnsRollNos(e.target.checked ? answers.map(a => a.rollNo) : []);
+                  }}
+                />
+                Select All
+              </label>
+              {answers.map((a) => (
+                <label key={a.rollNo} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={selectedAnsRollNos.includes(a.rollNo)}
+                    onChange={(e) => {
+                      const rollNo = a.rollNo;
+                      let newSelected;
+                      if (e.target.checked) {
+                        newSelected = [...selectedAnsRollNos, rollNo];
+                        setSelectedAnsRollNos(newSelected);
+                        if (newSelected.length === answers.length) setSelectAll(true);
+                      } else {
+                        newSelected = selectedAnsRollNos.filter(r => r !== rollNo);
+                        setSelectedAnsRollNos(newSelected);
+                        setSelectAll(false);
+                      }
+                    }}
+                  />
+                  {a.rollNo} • {a.name}
+                </label>
               ))}
-            </select>
+            </div>
           )}
         </div>
 
@@ -217,28 +242,18 @@ export default function Evaluator() {
           type="button"
           disabled={!canEvaluate || evaluating}
           onClick={async () => {
-            if (!selectedQp || !selectedAns) return;
+            if (!selectedQp || selectedAnswers.length === 0) return;
             setEvaluating(true);
             try {
               const res = await fetch('/ai/evaluate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ qp: selectedQp, as: selectedAns, ms })
+                body: JSON.stringify({ qp: selectedQp, answers: selectedAnswers, ms })
               });
               const data = await res.json();
               if (!res.ok) throw new Error(data.error || 'Evaluation failed');
-              const { marks, totalMarks } = data;
-              // Compute breakdown
-              const maxByScheme = (ms?.items ?? []).reduce((acc, it) => {
-                acc[it.no] = it.marks ?? 0; return acc; }, {} as Record<number, number>);
-              const breakdown = Object.entries(marks).map(([key, val]) => {
-                const no = parseInt(key.replace('answer', ''));
-                const max = maxByScheme[no] ?? 0;
-                return { no, got: val as number, max };
-              }).filter(b => b.got || b.max);
-              const totalGot = breakdown.reduce((s, b) => s + b.got, 0);
-              const totalMax = (ms?.items ?? []).reduce((s, it) => s + (it.marks || 0), 0) || totalMarks;
-              setView({ qp: selectedQp, ms, as: selectedAns, eval: { totalGot, totalMax, breakdown } });
+              const { results } = data;
+              setView({ qp: selectedQp, ms, eval: { evaluated: results.length, total: selectedAnswers.length } });
             } catch (error: any) {
               console.error(error);
               // For now, just log; maybe show error in UI later
@@ -267,7 +282,7 @@ export default function Evaluator() {
 
       {view ? (
         <div className="rounded-md border border-black/10 dark:border-white/20 p-3 text-sm">
-          <div className="font-medium mb-2">Selection Preview</div>
+          <div className="font-medium mb-2">Evaluation Summary</div>
           <div className="grid sm:grid-cols-3 gap-3">
             <div>
               <div className="text-muted-foreground">Question Paper</div>
@@ -279,15 +294,6 @@ export default function Evaluator() {
               ) : <div>—</div>}
             </div>
             <div>
-              <div className="text-muted-foreground">Answer Sheet</div>
-              {view.as ? (
-                <div>
-                  <div className="font-medium">{view.as.rollNo}</div>
-                  <div className="text-xs">{view.as.name} • Slot {view.as.slot}</div>
-                </div>
-              ) : <div>—</div>}
-            </div>
-            <div>
               <div className="text-muted-foreground">Marking Scheme</div>
               {view.ms ? (
                 <div>
@@ -295,18 +301,18 @@ export default function Evaluator() {
                   <div className="text-xs">{view.ms.examType ?? ""} • Slot {view.ms.slot ?? slot}</div>
                 </div>
               ) : (
-                <div className="text-xs">No Scheme Found: General Sscheme Applied</div>
+                <div className="text-xs">No Scheme Found: General Scheme Applied</div>
               )}
             </div>
             <div>
-              <div className="text-muted-foreground">Evaluation Completion</div>
+              <div className="text-muted-foreground">Evaluation Status</div>
               {view.eval ? (
                 <div>
-                  <div className="font-medium">{Math.round((view.eval.totalGot / (view.eval.totalMax || 1)) * 100)}%</div>
+                  <div className="font-medium">{view.eval.evaluated}/{view.eval.total} Evaluated</div>
                   <div className="mt-1 h-2 w-full rounded bg-black/10 dark:bg-white/10 overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-emerald-500 to-lime-500 animate-[pulse_2s_ease-in-out_infinite]"
-                      style={{ width: `${Math.min(100, Math.round((view.eval.totalGot / (view.eval.totalMax || 1)) * 100))}%` }}
+                      className="h-full bg-gradient-to-r from-emerald-500 to-lime-500"
+                      style={{ width: `${Math.min(100, Math.round((view.eval.evaluated / view.eval.total) * 100))}%` }}
                     />
                   </div>
                 </div>
