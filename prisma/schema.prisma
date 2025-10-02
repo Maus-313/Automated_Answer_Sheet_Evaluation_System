@@ -44,11 +44,10 @@ model MarkingSheet {
 // AnswerSheet: stores raw answers as strings (nullable)
 model AnswerSheet {
   // Use Roll Number as the primary identifier (unique)
-  rollNo     String   @id
-  name       String
-  slot       String
-  examType   ExamType
-  totalMarks Int
+  rollNo   String   @id
+  name     String
+  slot     String
+  examType ExamType
 
   // Answers 1..10 (0..10); text answers, 6..10 nullable for CAT
   answer1  String?

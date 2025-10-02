@@ -14,7 +14,6 @@ export type AnswerSheet = {
   name: string;
   slot: string;
   examType: "CAT" | "FAT" | string;
-  totalMarks: number;
   answer1?: string | null;
   answer2?: string | null;
   answer3?: string | null;
@@ -40,6 +39,7 @@ export default function AnswerSheetTable() {
   const [rowsLoading, setRowsLoading] = useState(true);
   const [rowsError, setRowsError] = useState<string | null>(null);
   const [slotFilter, setSlotFilter] = useState<string>("");
+  const [open, setOpen] = useState<Record<string, boolean>>({});
   const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
@@ -62,30 +62,6 @@ export default function AnswerSheetTable() {
     };
   }, []);
 
-  const header = useMemo(
-    () => (
-      <thead>
-        <tr className="border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
-          <th className="px-3 py-2 text-left text-sm font-medium whitespace-nowrap">Roll No</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Name</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Slot</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Exam Type</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Total Marks</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Ans 1</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Ans 2</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Ans 3</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Ans 4</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Ans 5</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Ans 6</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Ans 7</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Ans 8</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Ans 9</th>
-          <th className="px-3 py-2 text-left text-sm font-medium">Ans 10</th>
-        </tr>
-      </thead>
-    ),
-    []
-  );
 
   return (
     <section className="w-full flex flex-col gap-3 rounded-xl p-4 bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-900/70 dark:to-neutral-950 ring-2 ring-emerald-200 dark:ring-emerald-700/70 shadow-md">
@@ -149,30 +125,53 @@ export default function AnswerSheetTable() {
         ) : (rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : true)).length === 0 ? (
           <div className="px-3 py-2 text-sm">No Record Found</div>
         ) : (
-          <table className="w-full text-sm">
-            {header}
-            <tbody>
-              {(rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : true)).map((r) => (
-                <tr key={r.rollNo} className="border-b border-black/5 dark:border-white/5">
-                  <td className="px-3 py-2 align-top whitespace-nowrap">{r.rollNo}</td>
-                  <td className="px-3 py-2 align-top">{r.name}</td>
-                  <td className="px-3 py-2 align-top">{r.slot}</td>
-                  <td className="px-3 py-2 align-top">{r.examType}</td>
-                  <td className="px-3 py-2 align-top">{r.totalMarks}</td>
-                  <td className="px-3 py-2 align-top">{r.answer1 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer2 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer3 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer4 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer5 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer6 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer7 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer8 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer9 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer10 ?? "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="grid gap-3 w-full">
+            {(rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : true)).map((r) => {
+              const key = r.rollNo;
+              const isOpen = !!open[key];
+              return (
+                <div key={key} className="rounded-md border border-black/10 dark:border-white/20">
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <div className="flex gap-4 text-sm">
+                      <div><span className="text-muted-foreground">Roll No:</span> <span className="font-medium">{r.rollNo}</span></div>
+                      <div><span className="text-muted-foreground">Name:</span> <span className="font-medium">{r.name}</span></div>
+                      <div><span className="text-muted-foreground">Slot:</span> <span className="font-medium">{r.slot}</span></div>
+                      <div><span className="text-muted-foreground">Exam Type:</span> <span className="font-medium">{r.examType}</span></div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setOpen((prev) => ({ ...prev, [key]: !isOpen }))}
+                      className="text-sm rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+                    >
+                      {isOpen ? "Collapse" : "Expand"}
+                    </button>
+                  </div>
+                  {isOpen && (
+                    <div className="px-3 pb-3">
+                      <div className="w-full rounded-md border border-black/10 dark:border-white/20">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+                              <th className="px-3 py-2 text-left font-medium w-16">Q#</th>
+                              <th className="px-3 py-2 text-left font-medium">Answer</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[r.answer1, r.answer2, r.answer3, r.answer4, r.answer5, r.answer6, r.answer7, r.answer8, r.answer9, r.answer10].map((ans, idx) => (
+                              <tr key={idx} className="border-b border-black/5 dark:border-white/5">
+                                <td className="px-3 py-2 align-top whitespace-nowrap font-medium">{idx + 1}</td>
+                                <td className="px-3 py-2 align-top">{ans ?? "—"}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </section>
