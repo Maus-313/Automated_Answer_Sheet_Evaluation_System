@@ -14,7 +14,8 @@ type Item = {
   slot: string;
   courseCode: string;
   examType?: "CAT" | "FAT" | string;
-  questions: Array<{ no: number; text: string }>;
+  questions: Array<{ no: number; text: string; marks: number | null }>;
+  totalMarks: number;
 };
 
 export default function QuestionPaper() {
@@ -24,6 +25,10 @@ export default function QuestionPaper() {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [slotFilter, setSlotFilter] = useState<string>("");
   const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<Record<string, boolean>>({});
+  const [editedMarks, setEditedMarks] = useState<Record<string, Record<number, number>>>({});
+  const [hasChanges, setHasChanges] = useState<Record<string, boolean>>({});
+  const [updating, setUpdating] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -129,13 +134,33 @@ export default function QuestionPaper() {
                     <div><span className="text-muted-foreground">Subject:</span> <span className="font-medium">{it.subject}</span></div>
                     <div><span className="text-muted-foreground">Slot:</span> <span className="font-medium">{it.slot}</span></div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setOpen((prev) => ({ ...prev, [key]: !isOpen }))}
-                    className="text-sm rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
-                  >
-                    {isOpen ? "Collapse" : "Expand"}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editing[key]) {
+                          // Cancel editing - reset changes
+                          setEditedMarks(prev => {
+                            const newState = { ...prev };
+                            delete newState[key];
+                            return newState;
+                          });
+                          setHasChanges(prev => ({ ...prev, [key]: false }));
+                        }
+                        setEditing((prev) => ({ ...prev, [key]: !prev[key] }));
+                      }}
+                      className="text-sm rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+                    >
+                      {editing[key] ? "Cancel Edit" : "Edit Marks"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOpen((prev) => ({ ...prev, [key]: !isOpen }))}
+                      className="text-sm rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+                    >
+                      {isOpen ? "Collapse" : "Expand"}
+                    </button>
+                  </div>
                 </div>
                 {isOpen && (
                   <div className="px-3 pb-3">
@@ -154,6 +179,10 @@ export default function QuestionPaper() {
                         <div className="text-muted-foreground">Questions</div>
                         <div className="font-medium">{it.questions.length}</div>
                       </div>
+                      <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
+                        <div className="text-muted-foreground">Total Marks</div>
+                        <div className="font-medium">{it.totalMarks}</div>
+                      </div>
                     </div>
                     <div className="w-full rounded-md border border-black/10 dark:border-white/20">
                       {it.questions.length === 0 ? (
@@ -164,6 +193,7 @@ export default function QuestionPaper() {
                             <tr className="border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
                               <th className="px-3 py-2 text-left font-medium w-16">Q#</th>
                               <th className="px-3 py-2 text-left font-medium">Question</th>
+                              <th className="px-3 py-2 text-left font-medium w-20">Marks</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -171,10 +201,102 @@ export default function QuestionPaper() {
                               <tr key={q.no} className="border-b border-black/5 dark:border-white/5">
                                 <td className="px-3 py-2 align-top whitespace-nowrap font-medium">{q.no}</td>
                                 <td className="px-3 py-2 align-top">{q.text}</td>
+                                <td className="px-3 py-2 align-top whitespace-nowrap">
+                                  {editing[key] ? (
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="50"
+                                      value={editedMarks[key]?.[q.no] ?? (q.marks ?? 0)}
+                                      onChange={(e) => {
+                                        const value = parseInt(e.target.value) || 0;
+                                        setEditedMarks(prev => ({
+                                          ...prev,
+                                          [key]: { ...prev[key], [q.no]: value }
+                                        }));
+                                        setHasChanges(prev => ({ ...prev, [key]: true }));
+                                      }}
+                                      className="w-16 px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                                    />
+                                  ) : (
+                                    q.marks !== null ? q.marks : "—"
+                                  )}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
+                      )}
+                      {editing[key] && (
+                        <div className="flex justify-end mt-3">
+                          <button
+                            type="button"
+                            disabled={updating[key]}
+                            onClick={async () => {
+                              if (!hasChanges[key]) return;
+
+                              setUpdating(prev => ({ ...prev, [key]: true }));
+                              try {
+                                const marks: Record<number, number> = {};
+                                it.questions.forEach(q => {
+                                  marks[q.no] = editedMarks[key]?.[q.no] ?? (q.marks ?? 0);
+                                });
+
+                                const totalMarks = Object.values(marks).reduce((sum, mark) => sum + mark, 0);
+
+                                // Find the question paper ID - we need to get it from somewhere
+                                // For now, we'll need to modify the API to accept courseCode, slot, examType instead
+                                const response = await fetch('/question-paper', {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    courseCode: it.courseCode,
+                                    slot: it.slot,
+                                    examType: it.examType,
+                                    marks,
+                                    totalMarks
+                                  })
+                                });
+
+                                if (!response.ok) throw new Error('Failed to update marks');
+
+                                // Update local state
+                                setItems(prev => prev ? prev.map(item =>
+                                  item.courseCode === it.courseCode &&
+                                  item.slot === it.slot &&
+                                  item.examType === it.examType
+                                    ? {
+                                        ...item,
+                                        questions: item.questions.map(q => ({
+                                          ...q,
+                                          marks: marks[q.no]
+                                        })),
+                                        totalMarks
+                                      }
+                                    : item
+                                ) : null);
+
+                                setHasChanges(prev => ({ ...prev, [key]: false }));
+                                setEditing(prev => ({ ...prev, [key]: false }));
+                                const newEditedMarks = { ...editedMarks };
+                                delete newEditedMarks[key];
+                                setEditedMarks(newEditedMarks);
+                              } catch (error) {
+                                console.error('Failed to update marks:', error);
+                                alert('Failed to update marks. Please try again.');
+                              } finally {
+                                setUpdating(prev => ({ ...prev, [key]: false }));
+                              }
+                            }}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                              hasChanges[key]
+                                ? 'bg-green-600 hover:bg-green-700 text-white shadow-md'
+                                : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                            }`}
+                          >
+                            {updating[key] ? 'Updating...' : 'Update Marks'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>

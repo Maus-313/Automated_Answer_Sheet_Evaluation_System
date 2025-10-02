@@ -63,25 +63,36 @@ model AnswerSheet {
 }
 
 // Question paper and questions for a given exam/slot
-// Simple QuestionPaper with up to 10 questions (strings)
+// Simple QuestionPaper with up to 10 questions (strings) and their marks
 model QuestionPaper {
   id         String   @id @default(cuid())
   subject    String
   slot       String
   courseCode String
   examType   ExamType
+  totalMarks Int      @default(0)
 
   // Up to 10 questions; for CAT use 1..5, for FAT use 1..10
   question1  String?
+  mark1      Int?
   question2  String?
+  mark2      Int?
   question3  String?
+  mark3      Int?
   question4  String?
+  mark4      Int?
   question5  String?
+  mark5      Int?
   question6  String?
+  mark6      Int?
   question7  String?
+  mark7      Int?
   question8  String?
+  mark8      Int?
   question9  String?
+  mark9      Int?
   question10 String?
+  mark10     Int?
 
   // Avoid duplicates for the same paper context
   @@unique([courseCode, slot, examType])

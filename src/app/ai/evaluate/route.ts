@@ -35,7 +35,7 @@ ${questions.map((q: any, i: number) => `
 Question ${i+1}: ${q.text}
 Student Answer: ${ans[i] || 'No answer'}
 Criteria: ${criteria[i]?.criteria || 'General correctness'}
-Max Marks: ${criteria[i]?.marks || 5}
+Max Marks: ${q.marks || criteria[i]?.marks || 5}
 `).join('\n')}
 
 Return a JSON object with marks for each question:
@@ -67,7 +67,7 @@ Only return the JSON, no other text.
       const result: any = {};
       for (let i = 1; i <= 10; i++) {
         const key = `answer${i}`;
-        const max = criteria[i-1]?.marks || 5;
+        const max = questions[i-1]?.marks ?? criteria[i-1]?.marks ?? 5;
         result[key] = Math.max(0, Math.min((marks as any)[key] || 0, max));
       }
 
