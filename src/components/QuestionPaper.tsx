@@ -13,7 +13,7 @@ type Item = {
   subject: string;
   slot: string;
   courseCode: string;
-  examType?: "CAT" | "FAT" | string;
+  examType?: "CAT" | "FAT" | "ASSESSMENT" | string;
   questions: Array<{ no: number; text: string; marks: number | null }>;
   totalMarks: number;
 };

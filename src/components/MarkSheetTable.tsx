@@ -13,7 +13,7 @@ export type MarkingSheet = {
   rollNo: string;
   name: string;
   slot: string;
-  examType: "CAT" | "FAT" | string;
+  examType: "CAT" | "FAT" | "ASSESSMENT" | string;
   totalMarks: number;
   answer1?: number | null;
   answer2?: number | null;

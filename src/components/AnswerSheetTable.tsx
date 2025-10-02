@@ -13,7 +13,7 @@ export type AnswerSheet = {
   rollNo: string;
   name: string;
   slot: string;
-  examType: "CAT" | "FAT" | string;
+  examType: "CAT" | "FAT" | "ASSESSMENT" | string;
   answer1?: string | null;
   answer2?: string | null;
   answer3?: string | null;

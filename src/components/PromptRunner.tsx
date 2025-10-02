@@ -6,6 +6,21 @@ type PromptRunnerProps = {
   targetModel?: 'QuestionPaper' | 'MarkingScheme' | 'AnswerSheet';
 };
 
+const getDefaultPrompt = (targetModel: string, ocrText: string) => {
+  const basePrompt = ocrText ? `Extract from this OCR text:\n\n${ocrText}\n\n` : '';
+
+  switch (targetModel) {
+    case 'QuestionPaper':
+      return `${basePrompt}Extract ONLY the questions from this text. Ignore any answers, solutions, or student responses. Create a QuestionPaper entry with appropriate course code, subject, slot, and exam type (CAT/FAT/ASSESSMENT).`;
+    case 'AnswerSheet':
+      return `${basePrompt}Extract ONLY the student answers from this text. Ignore questions, marking schemes, or criteria. Create an AnswerSheet entry with roll number, name, slot, exam type (CAT/FAT/ASSESSMENT), and answers.`;
+    case 'MarkingScheme':
+      return `${basePrompt}Extract ONLY the marking criteria and marks from this text. Ignore student answers or solutions. Create a MarkingScheme entry with course code, slot, exam type (CAT/FAT/ASSESSMENT), marks, and criteria.`;
+    default:
+      return basePrompt;
+  }
+};
+
 export default function PromptRunner({ targetModel = 'QuestionPaper' }: PromptRunnerProps) {
   const [text, setText] = useState("");
   const [inputValue, setInputValue] = useState("");
@@ -72,7 +87,7 @@ export default function PromptRunner({ targetModel = 'QuestionPaper' }: PromptRu
         type="text"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
-        placeholder="Type something..."
+        placeholder={`Describe what to extract for ${targetModel}...`}
         className="w-full sm:max-w-md mx-auto h-9 rounded-md border border-black/10 dark:border-white/20 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
       />
 
@@ -118,11 +133,20 @@ export default function PromptRunner({ targetModel = 'QuestionPaper' }: PromptRu
 
       <button
         type="button"
-        onClick={() => setInputValue((prev) => (prev ? prev + "\n\n" + ocrText : ocrText))}
+        onClick={() => setInputValue(getDefaultPrompt(targetModel, ocrText))}
         disabled={!ocrText || loading}
         className="w-fit mx-auto rounded-md bg-emerald-600 disabled:bg-emerald-300 text-white px-4 py-2 text-sm font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
       >
-        Insert OCR Output
+        Generate Smart Prompt
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setInputValue((prev) => (prev ? prev + "\n\n" + ocrText : ocrText))}
+        disabled={!ocrText || loading}
+        className="w-fit mx-auto rounded-md bg-blue-600 disabled:bg-blue-300 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        Insert Raw OCR
       </button>
 
       {error && (

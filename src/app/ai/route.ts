@@ -14,11 +14,14 @@ Requirements:
 - Use: import { PrismaClient } from '@prisma/client'
 - Use prisma.questionPaper.upsert with where.courseCode_slot_examType.
 - Fill fields from the user's prompt. If data is missing, leave nullable question fields undefined.
-- examType must be 'CAT' or 'FAT'.
-- Map questions into question1..question10 (strings). If CAT, typically use question1..question5. If FAT, up to question10.
+- examType must be 'CAT', 'FAT', or 'ASSESSMENT'.
+- Map questions into question1..question10 (strings). CAT typically uses 1-5, FAT/ASSESSMENT use 1-10.
+- IMPORTANT: Extract ONLY questions from the provided text. COMPLETELY IGNORE any student answers, solutions, or answer sections.
+- If the text contains both questions and answers, extract only the question parts.
+- Auto-detect exam type from content: look for "CAT", "FAT", "Assessment", "Quiz", etc. Default to 'ASSESSMENT' if unclear.
 - Include an async main() wrapper and prisma.$disconnect() in finally.
 
-Prisma shape reminder (QuestionPaper): { subject: string; slot: string; courseCode: string; examType: 'CAT' | 'FAT'; question1?: string | null; ... question10?: string | null }
+Prisma shape reminder (QuestionPaper): { subject: string; slot: string; courseCode: string; examType: 'CAT' | 'FAT' | 'ASSESSMENT'; question1?: string | null; ... question10?: string | null }
 
 Example format:
 \`\`\`ts
@@ -32,7 +35,7 @@ async function main() {
       courseCode_slot_examType: {
         courseCode: 'MATH101',
         slot: 'A1',
-        examType: 'CAT',
+        examType: 'ASSESSMENT',
       },
     },
     update: {
@@ -44,7 +47,7 @@ async function main() {
       subject: 'Applied Mathematics',
       slot: 'A1',
       courseCode: 'MATH101',
-      examType: 'CAT',
+      examType: 'ASSESSMENT',
       question1: 'Define continuity with example',
       question2: 'Evaluate ∫(2x + 3) dx',
     },
@@ -62,10 +65,13 @@ Requirements:
 - Use: import { PrismaClient } from '@prisma/client'
 - Use prisma.markingScheme.upsert with where.courseCode_slot_examType.
 - Fill fields from the user's prompt. Map marks and criteria into mark1..mark10 and criteria1..criteria10 (numbers and strings).
-- examType must be 'CAT' or 'FAT'.
+- examType must be 'CAT', 'FAT', or 'ASSESSMENT'.
+- IMPORTANT: Extract ONLY marking criteria and marks from the provided text. COMPLETELY IGNORE student answers, solutions, or answer sections.
+- If the text contains both questions and answers, extract only the marking scheme/criteria parts.
+- Auto-detect exam type from content: look for "CAT", "FAT", "Assessment", "Quiz", etc. Default to 'ASSESSMENT' if unclear.
 - Include an async main() wrapper and prisma.$disconnect() in finally.
 
-Prisma shape reminder (MarkingScheme): { courseCode: string; slot: string; examType: 'CAT' | 'FAT'; mark1?: number | null; criteria1?: string | null; ... mark10?: number | null; criteria10?: string | null }
+Prisma shape reminder (MarkingScheme): { courseCode: string; slot: string; examType: 'CAT' | 'FAT' | 'ASSESSMENT'; mark1?: number | null; criteria1?: string | null; ... mark10?: number | null; criteria10?: string | null }
 
 Example format:
 \`\`\`ts
@@ -79,7 +85,7 @@ async function main() {
       courseCode_slot_examType: {
         courseCode: 'MATH101',
         slot: 'A1',
-        examType: 'CAT',
+        examType: 'ASSESSMENT',
       },
     },
     update: {
@@ -91,7 +97,7 @@ async function main() {
     create: {
       courseCode: 'MATH101',
       slot: 'A1',
-      examType: 'CAT',
+      examType: 'ASSESSMENT',
       mark1: 5,
       criteria1: 'Correct definition',
       mark2: 5,
@@ -111,10 +117,13 @@ Requirements:
 - Use: import { PrismaClient } from '@prisma/client'
 - Use prisma.answerSheet.upsert with where.rollNo.
 - Fill fields from the user's prompt. Map answers into answer1..answer10 (strings).
-- examType must be 'CAT' or 'FAT'.
+- examType must be 'CAT', 'FAT', or 'ASSESSMENT'.
+- IMPORTANT: Extract ONLY student answers from the provided text. COMPLETELY IGNORE questions, marking schemes, or criteria sections.
+- If the text contains both questions and answers, extract only the answer parts.
+- Auto-detect exam type from content: look for "CAT", "FAT", "Assessment", "Quiz", etc. Default to 'ASSESSMENT' if unclear.
 - Include an async main() wrapper and prisma.$disconnect() in finally.
 
-Prisma shape reminder (AnswerSheet): { rollNo: string; name: string; slot: string; examType: 'CAT' | 'FAT'; totalMarks: number; answer1?: string | null; ... answer10?: string | null }
+Prisma shape reminder (AnswerSheet): { rollNo: string; name: string; slot: string; examType: 'CAT' | 'FAT' | 'ASSESSMENT'; answer1?: string | null; ... answer10?: string | null }
 
 Example format:
 \`\`\`ts
@@ -130,8 +139,7 @@ async function main() {
     update: {
       name: 'John Doe',
       slot: 'A1',
-      examType: 'CAT',
-      totalMarks: 10,
+      examType: 'ASSESSMENT',
       answer1: 'Answer 1',
       answer2: 'Answer 2',
     },
@@ -139,8 +147,7 @@ async function main() {
       rollNo: '12345',
       name: 'John Doe',
       slot: 'A1',
-      examType: 'CAT',
-      totalMarks: 10,
+      examType: 'ASSESSMENT',
       answer1: 'Answer 1',
       answer2: 'Answer 2',
     },

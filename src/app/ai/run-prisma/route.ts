@@ -68,7 +68,7 @@ function parseCode(code: string): Parsed | null {
     const courseCode = valOf(innerWhere, "courseCode");
     const slot = valOf(innerWhere, "slot");
     const examTypeRaw = valOf(innerWhere, "examType");
-    const examType = (examTypeRaw === "CAT" || examTypeRaw === "FAT") ? examTypeRaw : undefined;
+    const examType = (examTypeRaw === "CAT" || examTypeRaw === "FAT" || examTypeRaw === "ASSESSMENT") ? examTypeRaw : undefined;
     if (!courseCode || !slot || !examType) return null;
     where = { courseCode_slot_examType: { courseCode, slot, examType } };
 
@@ -125,8 +125,6 @@ function parseCode(code: string): Parsed | null {
       if (slot) update.slot = slot;
       const examType = valOf(updateBlock, "examType");
       if (examType) update.examType = examType;
-      const totalMarks = valOf(updateBlock, "totalMarks");
-      if (totalMarks !== undefined) update.totalMarks = totalMarks;
       for (let i = 1; i <= 10; i++) {
         const ak = `answer${i}`;
         const av = valOf(updateBlock, ak);
@@ -140,8 +138,6 @@ function parseCode(code: string): Parsed | null {
       if (slot) create.slot = slot;
       const examType = valOf(createBlock, "examType");
       if (examType) create.examType = examType;
-      const totalMarks = valOf(createBlock, "totalMarks");
-      if (totalMarks !== undefined) create.totalMarks = totalMarks;
       for (let i = 1; i <= 10; i++) {
         const ak = `answer${i}`;
         const av = valOf(createBlock, ak);
@@ -257,7 +253,7 @@ export async function POST(req: NextRequest) {
       const existing = await prisma.answerSheet.findUnique({ where: asWhere });
       if (existing) {
         const patch: Record<string, any> = {};
-        const keys = ["name","slot","examType","totalMarks","answer1","answer2","answer3","answer4","answer5","answer6","answer7","answer8","answer9","answer10"];
+        const keys = ["name","slot","examType","answer1","answer2","answer3","answer4","answer5","answer6","answer7","answer8","answer9","answer10"];
         for (const k of keys) {
           const curr = (existing as any)[k];
           const next = update[k] ?? create[k];
@@ -271,7 +267,7 @@ export async function POST(req: NextRequest) {
         const updated = await prisma.answerSheet.update({ where: asWhere, data: patch });
         return NextResponse.json({ status: "updated", item: updated });
       } else {
-        if (!create.name || !create.slot || !create.examType || create.totalMarks === undefined) {
+        if (!create.name || !create.slot || !create.examType) {
           return NextResponse.json({ error: "Create missing required fields" }, { status: 400 });
         }
         const created = await prisma.answerSheet.create({
@@ -280,7 +276,6 @@ export async function POST(req: NextRequest) {
             name: create.name,
             slot: create.slot,
             examType: create.examType as any,
-            totalMarks: create.totalMarks,
             answer1: create.answer1 ?? null,
             answer2: create.answer2 ?? null,
             answer3: create.answer3 ?? null,

@@ -12,7 +12,7 @@ const SLOTS = [
 type MarkSchemeItem = { no: number; marks: number; criteria?: string };
 type MarkingSchemeProps = Partial<{
   courseCode: string;
-  examType: "CAT" | "FAT" | string;
+  examType: "CAT" | "FAT" | "ASSESSMENT" | string;
   items: MarkSchemeItem[];
 }>;
 
@@ -21,7 +21,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
   const [item, setItem] = useState<{
     courseCode?: string;
     slot?: string;
-    examType?: "CAT" | "FAT" | string;
+    examType?: "CAT" | "FAT" | "ASSESSMENT" | string;
     items: MarkSchemeItem[];
   } | null>(hasProps ? { courseCode: props.courseCode, examType: props.examType, items: props.items || [] } : null);
 
@@ -33,7 +33,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
   const [editedData, setEditedData] = useState<{
     courseCode: string;
     slot: string;
-    examType: string;
+    examType: "CAT" | "FAT" | "ASSESSMENT" | string;
     items: MarkSchemeItem[];
   } | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
