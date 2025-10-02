@@ -219,26 +219,32 @@ export default function Evaluator() {
           onClick={async () => {
             if (!selectedQp || !selectedAns) return;
             setEvaluating(true);
-            // Compute a simple evaluation: sum student's per-answer marks if available; fallback to provided totalMarks
-            const maxByScheme = (ms?.items ?? []).reduce((acc, it) => {
-              acc[it.no] = it.marks ?? 0; return acc; }, {} as Record<number, number>);
-            const answersArr = [
-              selectedAns.answer1, selectedAns.answer2, selectedAns.answer3, selectedAns.answer4, selectedAns.answer5,
-              selectedAns.answer6, selectedAns.answer7, selectedAns.answer8, selectedAns.answer9, selectedAns.answer10,
-            ];
-            let totalMax = (ms?.items ?? []).reduce((s, it) => s + (it.marks || 0), 0);
-            if (!totalMax && typeof selectedAns.totalMarks === 'number') totalMax = selectedAns.totalMarks;
-            const breakdown = answersArr.map((val, idx) => {
-              const no = idx + 1;
-              const max = maxByScheme[no] ?? 0;
-              const got = typeof val === 'number' ? Math.max(0, Math.min(val, max || 1000)) : 0;
-              return { no, got, max };
-            }).filter(b => b.got || b.max);
-            const totalGot = breakdown.length ? breakdown.reduce((s, b) => s + b.got, 0) : (selectedAns.totalMarks ?? 0);
-            // Simulate short processing so the animated state is visible
-            await new Promise(r => setTimeout(r, 450));
-            setView({ qp: selectedQp, ms, as: selectedAns, eval: { totalGot, totalMax, breakdown } });
-            setEvaluating(false);
+            try {
+              const res = await fetch('/ai/evaluate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ qp: selectedQp, as: selectedAns, ms })
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Evaluation failed');
+              const { marks, totalMarks } = data;
+              // Compute breakdown
+              const maxByScheme = (ms?.items ?? []).reduce((acc, it) => {
+                acc[it.no] = it.marks ?? 0; return acc; }, {} as Record<number, number>);
+              const breakdown = Object.entries(marks).map(([key, val]) => {
+                const no = parseInt(key.replace('answer', ''));
+                const max = maxByScheme[no] ?? 0;
+                return { no, got: val as number, max };
+              }).filter(b => b.got || b.max);
+              const totalGot = breakdown.reduce((s, b) => s + b.got, 0);
+              const totalMax = (ms?.items ?? []).reduce((s, it) => s + (it.marks || 0), 0) || totalMarks;
+              setView({ qp: selectedQp, ms, as: selectedAns, eval: { totalGot, totalMax, breakdown } });
+            } catch (error: any) {
+              console.error(error);
+              // For now, just log; maybe show error in UI later
+            } finally {
+              setEvaluating(false);
+            }
           }}
           className={[
             "relative inline-flex items-center gap-2 text-sm px-4 py-2 rounded-md",
@@ -293,10 +299,10 @@ export default function Evaluator() {
               )}
             </div>
             <div>
-              <div className="text-muted-foreground">Evaluation</div>
+              <div className="text-muted-foreground">Evaluation Completion</div>
               {view.eval ? (
                 <div>
-                  <div className="font-medium">{view.eval.totalGot} / {view.eval.totalMax}</div>
+                  <div className="font-medium">{Math.round((view.eval.totalGot / (view.eval.totalMax || 1)) * 100)}%</div>
                   <div className="mt-1 h-2 w-full rounded bg-black/10 dark:bg-white/10 overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-emerald-500 to-lime-500 animate-[pulse_2s_ease-in-out_infinite]"
