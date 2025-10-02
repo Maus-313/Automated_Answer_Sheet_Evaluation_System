@@ -6,22 +6,27 @@ export const dynamic = "force-dynamic";
 
 export async function PUT(req: Request) {
   try {
-    const { courseCode, slot, examType, marks, totalMarks } = await req.json();
+    const { originalCourseCode, originalExamType, courseCode, slot, examType, marks, totalMarks, questions } = await req.json();
 
-    if (!courseCode || !slot || !examType || !marks || typeof totalMarks !== 'number') {
-      return NextResponse.json({ error: "Missing courseCode, slot, examType, marks, or totalMarks" }, { status: 400 });
+    if (!originalCourseCode || !originalExamType || !courseCode || !slot || !examType || !marks || typeof totalMarks !== 'number') {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Update the question paper with new marks
-    const updateData: any = { totalMarks };
+    // Update the question paper with new data
+    const updateData: any = {
+      courseCode,
+      examType,
+      totalMarks
+    };
     for (let i = 1; i <= 10; i++) {
-      if (marks[i] !== undefined) {
-        updateData[`mark${i}`] = marks[i];
-      }
+      // Set marks - if not provided, set to null (removed question)
+      updateData[`mark${i}`] = marks[i] !== undefined ? marks[i] : null;
+      // Set questions - if not provided or empty, set to null (removed question)
+      updateData[`question${i}`] = questions && questions[`question${i}`] !== undefined ? questions[`question${i}`] : null;
     }
 
     const updated = await prisma.questionPaper.update({
-      where: { courseCode_slot_examType: { courseCode, slot, examType } },
+      where: { courseCode_slot_examType: { courseCode: originalCourseCode, slot, examType: originalExamType } },
       data: updateData,
     });
 

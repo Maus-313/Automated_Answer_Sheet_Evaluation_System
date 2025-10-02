@@ -27,6 +27,11 @@ export default function QuestionPaper() {
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<Record<string, boolean>>({});
   const [editedMarks, setEditedMarks] = useState<Record<string, Record<number, number>>>({});
+  const [editedData, setEditedData] = useState<Record<string, {
+    courseCode: string;
+    examType: string;
+    questions: Array<{ no: number; text: string; marks: number | null }>;
+  }>>({});
   const [hasChanges, setHasChanges] = useState<Record<string, boolean>>({});
   const [updating, setUpdating] = useState<Record<string, boolean>>({});
 
@@ -145,13 +150,28 @@ export default function QuestionPaper() {
                             delete newState[key];
                             return newState;
                           });
+                          setEditedData(prev => {
+                            const newState = { ...prev };
+                            delete newState[key];
+                            return newState;
+                          });
                           setHasChanges(prev => ({ ...prev, [key]: false }));
+                        } else {
+                          // Enter editing - initialize data
+                          setEditedData(prev => ({
+                            ...prev,
+                            [key]: {
+                              courseCode: it.courseCode,
+                              examType: it.examType ?? '',
+                              questions: it.questions.map(q => ({ ...q }))
+                            }
+                          }));
                         }
                         setEditing((prev) => ({ ...prev, [key]: !prev[key] }));
                       }}
                       className="text-sm rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
                     >
-                      {editing[key] ? "Cancel Edit" : "Edit Marks"}
+                      {editing[key] ? "Cancel Edit" : "Edit"}
                     </button>
                     <button
                       type="button"
@@ -167,21 +187,53 @@ export default function QuestionPaper() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-2 text-sm mb-2">
                       <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
                         <div className="text-muted-foreground">Course Code</div>
-                        <div className="font-medium">{it.courseCode}</div>
+                        {editing[key] ? (
+                          <input
+                            type="text"
+                            value={editedData[key]?.courseCode ?? it.courseCode}
+                            onChange={(e) => {
+                              setEditedData(prev => ({
+                                ...prev,
+                                [key]: { ...prev[key], courseCode: e.target.value }
+                              }));
+                              setHasChanges(prev => ({ ...prev, [key]: true }));
+                            }}
+                            className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                          />
+                        ) : (
+                          <div className="font-medium">{it.courseCode}</div>
+                        )}
                       </div>
-                      {it.examType ? (
-                        <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
-                          <div className="text-muted-foreground">Exam Type</div>
+                      <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
+                        <div className="text-muted-foreground">Exam Type</div>
+                        {editing[key] ? (
+                          <select
+                            value={editedData[key]?.examType ?? it.examType ?? ''}
+                            onChange={(e) => {
+                              setEditedData(prev => ({
+                                ...prev,
+                                [key]: { ...prev[key], examType: e.target.value }
+                              }));
+                              setHasChanges(prev => ({ ...prev, [key]: true }));
+                            }}
+                            className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                          >
+                            <option value="CAT">CAT</option>
+                            <option value="FAT">FAT</option>
+                          </select>
+                        ) : (
                           <div className="font-medium">{it.examType}</div>
-                        </div>
-                      ) : null}
+                        )}
+                      </div>
                       <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
                         <div className="text-muted-foreground">Questions</div>
-                        <div className="font-medium">{it.questions.length}</div>
+                        <div className="font-medium">{(editedData[key]?.questions ?? it.questions).length}</div>
                       </div>
                       <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
                         <div className="text-muted-foreground">Total Marks</div>
-                        <div className="font-medium">{it.totalMarks}</div>
+                        <div className="font-medium">
+                          {(editedData[key]?.questions ?? it.questions).reduce((sum, q) => sum + (editedMarks[key]?.[q.no] ?? q.marks ?? 0), 0)}
+                        </div>
                       </div>
                     </div>
                     <div className="w-full rounded-md border border-black/10 dark:border-white/20">
@@ -194,13 +246,34 @@ export default function QuestionPaper() {
                               <th className="px-3 py-2 text-left font-medium w-16">Q#</th>
                               <th className="px-3 py-2 text-left font-medium">Question</th>
                               <th className="px-3 py-2 text-left font-medium w-20">Marks</th>
+                              {editing[key] && <th className="px-3 py-2 text-left font-medium w-16">Actions</th>}
                             </tr>
                           </thead>
                           <tbody>
-                            {it.questions.map((q) => (
+                            {(editedData[key]?.questions ?? it.questions).map((q) => (
                               <tr key={q.no} className="border-b border-black/5 dark:border-white/5">
                                 <td className="px-3 py-2 align-top whitespace-nowrap font-medium">{q.no}</td>
-                                <td className="px-3 py-2 align-top">{q.text}</td>
+                                <td className="px-3 py-2 align-top">
+                                  {editing[key] ? (
+                                    <textarea
+                                      value={q.text}
+                                      onChange={(e) => {
+                                        const updatedQuestions = (editedData[key]?.questions ?? it.questions).map(question =>
+                                          question.no === q.no ? { ...question, text: e.target.value } : question
+                                        );
+                                        setEditedData(prev => ({
+                                          ...prev,
+                                          [key]: { ...prev[key], questions: updatedQuestions }
+                                        }));
+                                        setHasChanges(prev => ({ ...prev, [key]: true }));
+                                      }}
+                                      className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800 resize-y min-h-[60px]"
+                                      rows={2}
+                                    />
+                                  ) : (
+                                    q.text
+                                  )}
+                                </td>
                                 <td className="px-3 py-2 align-top whitespace-nowrap">
                                   {editing[key] ? (
                                     <input
@@ -222,8 +295,48 @@ export default function QuestionPaper() {
                                     q.marks !== null ? q.marks : "—"
                                   )}
                                 </td>
+                                {editing[key] && (
+                                  <td className="px-3 py-2 align-top">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updatedQuestions = (editedData[key]?.questions ?? it.questions).filter(question => question.no !== q.no);
+                                        setEditedData(prev => ({
+                                          ...prev,
+                                          [key]: { ...prev[key], questions: updatedQuestions }
+                                        }));
+                                        setHasChanges(prev => ({ ...prev, [key]: true }));
+                                      }}
+                                      className="text-red-600 hover:text-red-800 text-sm px-2 py-1 rounded border border-red-300 hover:border-red-400"
+                                    >
+                                      Remove
+                                    </button>
+                                  </td>
+                                )}
                               </tr>
                             ))}
+                            {editing[key] && (
+                              <tr>
+                                <td colSpan={4} className="px-3 py-2 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const currentQuestions = editedData[key]?.questions ?? it.questions;
+                                      const nextNo = Math.max(...currentQuestions.map(q => q.no), 0) + 1;
+                                      const updatedQuestions = [...currentQuestions, { no: nextNo, text: '', marks: 0 }];
+                                      setEditedData(prev => ({
+                                        ...prev,
+                                        [key]: { ...prev[key], questions: updatedQuestions }
+                                      }));
+                                      setHasChanges(prev => ({ ...prev, [key]: true }));
+                                    }}
+                                    className="text-green-600 hover:text-green-800 text-sm px-3 py-1 rounded border border-green-300 hover:border-green-400"
+                                  >
+                                    + Add Question
+                                  </button>
+                                </td>
+                              </tr>
+                            )}
                           </tbody>
                         </table>
                       )}
@@ -237,28 +350,46 @@ export default function QuestionPaper() {
 
                               setUpdating(prev => ({ ...prev, [key]: true }));
                               try {
+                                const currentData = editedData[key];
                                 const marks: Record<number, number> = {};
-                                it.questions.forEach(q => {
+                                const questions = currentData?.questions ?? it.questions;
+
+                                // Set marks for remaining questions, others will be null
+                                questions.forEach(q => {
                                   marks[q.no] = editedMarks[key]?.[q.no] ?? (q.marks ?? 0);
                                 });
 
                                 const totalMarks = Object.values(marks).reduce((sum, mark) => sum + mark, 0);
 
-                                // Find the question paper ID - we need to get it from somewhere
-                                // For now, we'll need to modify the API to accept courseCode, slot, examType instead
+                                // Prepare question text updates
+                                const questionUpdates: Record<string, string> = {};
+                                // Clear all question fields first
+                                for (let i = 1; i <= 10; i++) {
+                                  questionUpdates[`question${i}`] = '';
+                                }
+                                // Then set the remaining questions
+                                questions.forEach(q => {
+                                  questionUpdates[`question${q.no}`] = q.text;
+                                });
+
                                 const response = await fetch('/question-paper', {
                                   method: 'PUT',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
-                                    courseCode: it.courseCode,
+                                    // Original identifiers for finding the record
+                                    originalCourseCode: it.courseCode,
+                                    originalExamType: it.examType,
+                                    // New values for updating
+                                    courseCode: currentData?.courseCode ?? it.courseCode,
                                     slot: it.slot,
-                                    examType: it.examType,
+                                    examType: currentData?.examType ?? it.examType,
                                     marks,
-                                    totalMarks
+                                    totalMarks,
+                                    questions: questionUpdates
                                   })
                                 });
 
-                                if (!response.ok) throw new Error('Failed to update marks');
+                                if (!response.ok) throw new Error('Failed to update');
 
                                 // Update local state
                                 setItems(prev => prev ? prev.map(item =>
@@ -267,7 +398,9 @@ export default function QuestionPaper() {
                                   item.examType === it.examType
                                     ? {
                                         ...item,
-                                        questions: item.questions.map(q => ({
+                                        courseCode: currentData?.courseCode ?? item.courseCode,
+                                        examType: currentData?.examType ?? item.examType,
+                                        questions: questions.map(q => ({
                                           ...q,
                                           marks: marks[q.no]
                                         })),
@@ -279,11 +412,14 @@ export default function QuestionPaper() {
                                 setHasChanges(prev => ({ ...prev, [key]: false }));
                                 setEditing(prev => ({ ...prev, [key]: false }));
                                 const newEditedMarks = { ...editedMarks };
+                                const newEditedData = { ...editedData };
                                 delete newEditedMarks[key];
+                                delete newEditedData[key];
                                 setEditedMarks(newEditedMarks);
+                                setEditedData(newEditedData);
                               } catch (error) {
-                                console.error('Failed to update marks:', error);
-                                alert('Failed to update marks. Please try again.');
+                                console.error('Failed to update:', error);
+                                alert('Failed to update. Please try again.');
                               } finally {
                                 setUpdating(prev => ({ ...prev, [key]: false }));
                               }
