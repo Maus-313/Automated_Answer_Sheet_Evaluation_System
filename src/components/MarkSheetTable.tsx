@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import LoadingDots from "@/components/LoadingDots";
+import { exportToExcel, exportToCSV } from "@/lib/utils";
+import { Download } from "lucide-react";
 
 const SLOTS = [
   "A1","A2","B1","B2","C1","C2","D1","D2","E1","E2","F1","F2","G1","G2",
@@ -92,6 +94,26 @@ export default function MarkSheetTable() {
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Evaluated Mark Sheet</h2>
         <div className="flex items-center gap-2">
+          {filtered.length > 0 && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => exportToExcel(filtered, `MarkSheet_${slotFilter}`)}
+                className="flex items-center gap-1 text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-green-600 to-emerald-600 shadow-md shadow-green-500/30 hover:shadow-lg hover:shadow-green-500/40 hover:scale-[1.02] transition-all"
+              >
+                <Download className="h-3 w-3" />
+                Excel
+              </button>
+              <button
+                type="button"
+                onClick={() => exportToCSV(filtered, `MarkSheet_${slotFilter}`)}
+                className="flex items-center gap-1 text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 hover:scale-[1.02] transition-all"
+              >
+                <Download className="h-3 w-3" />
+                CSV
+              </button>
+            </div>
+          )}
           <label htmlFor="mslot" className="text-sm text-muted-foreground">Slot</label>
           <select
             id="mslot"

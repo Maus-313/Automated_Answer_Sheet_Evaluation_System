@@ -62,6 +62,7 @@ export default function AnswerSheetTable() {
     };
   }, []);
 
+  const filtered = useMemo(() => (rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : true)), [rows, slotFilter]);
 
   return (
     <section className="w-full flex flex-col gap-3 rounded-xl p-4 bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-900/70 dark:to-neutral-950 ring-2 ring-emerald-200 dark:ring-emerald-700/70 shadow-md">
@@ -122,11 +123,11 @@ export default function AnswerSheetTable() {
           <div className="px-3 py-2 text-sm">Please Select A Slot</div>
         ) : !rows || rows.length === 0 ? (
           <div className="px-3 py-2 text-sm">No Record Found</div>
-        ) : (rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : true)).length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="px-3 py-2 text-sm">No Record Found</div>
         ) : (
           <div className="grid gap-3 w-full">
-            {(rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : true)).map((r) => {
+            {filtered.map((r) => {
               const key = r.rollNo;
               const isOpen = !!open[key];
               return (
