@@ -29,6 +29,15 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
   const [error, setError] = useState<string | null>(null);
   const [slot, setSlot] = useState<string>("");
   const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editedData, setEditedData] = useState<{
+    courseCode: string;
+    slot: string;
+    examType: string;
+    items: MarkSchemeItem[];
+  } | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     if (hasProps) return;
@@ -69,6 +78,28 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">Marking Scheme</h2>
+          {item && (
+            <button
+              type="button"
+              onClick={() => {
+                if (editing) {
+                  setEditedData(null);
+                  setHasChanges(false);
+                } else {
+                  setEditedData({
+                    courseCode: courseCode || '',
+                    slot: slotValue || '',
+                    examType: examType || '',
+                    items: [...items]
+                  });
+                }
+                setEditing(!editing);
+              }}
+              className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/30 hover:shadow-lg hover:shadow-purple-500/40 hover:scale-[1.02] transition-all"
+            >
+              {editing ? "Cancel Edit" : "Edit"}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setAddOpen((v) => !v)}
@@ -130,31 +161,68 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-sm">
             <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
               <div className="text-muted-foreground">Course Code</div>
-              <div className="font-medium">{courseCode}</div>
+              {editing ? (
+                <input
+                  type="text"
+                  value={editedData?.courseCode || ''}
+                  onChange={(e) => {
+                    setEditedData(prev => prev ? { ...prev, courseCode: e.target.value } : null);
+                    setHasChanges(true);
+                  }}
+                  className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                />
+              ) : (
+                <div className="font-medium">{courseCode}</div>
+              )}
             </div>
-            {slotValue ? (
-              <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
-                <div className="text-muted-foreground">Slot</div>
+            <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
+              <div className="text-muted-foreground">Slot</div>
+              {editing ? (
+                <select
+                  value={editedData?.slot || ''}
+                  onChange={(e) => {
+                    setEditedData(prev => prev ? { ...prev, slot: e.target.value } : null);
+                    setHasChanges(true);
+                  }}
+                  className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                >
+                  {SLOTS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              ) : (
                 <div className="font-medium">{slotValue}</div>
-              </div>
-            ) : null}
-            {examType ? (
-              <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
-                <div className="text-muted-foreground">Exam Type</div>
+              )}
+            </div>
+            <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
+              <div className="text-muted-foreground">Exam Type</div>
+              {editing ? (
+                <select
+                  value={editedData?.examType || ''}
+                  onChange={(e) => {
+                    setEditedData(prev => prev ? { ...prev, examType: e.target.value } : null);
+                    setHasChanges(true);
+                  }}
+                  className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                >
+                  <option value="CAT">CAT</option>
+                  <option value="FAT">FAT</option>
+                </select>
+              ) : (
                 <div className="font-medium">{examType}</div>
-              </div>
-            ) : null}
+              )}
+            </div>
             <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
               <div className="text-muted-foreground">Total Marks</div>
-              <div className="font-medium">{total}</div>
+              <div className="font-medium">{editing ? (editedData?.items.reduce((sum, i) => sum + (i.marks || 0), 0) || 0) : total}</div>
             </div>
           </div>
 
           <div className="w-full rounded-md border border-black/10 dark:border-white/20">
-            {items.length === 0 ? (
+            {(editing ? editedData?.items || [] : items).length === 0 ? (
               <div className="px-3 py-2 text-sm">No marking items provided</div>
             ) : (
               <table className="w-full text-sm">
@@ -163,20 +231,161 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
                     <th className="px-3 py-2 text-left font-medium w-16">Q#</th>
                     <th className="px-3 py-2 text-left font-medium">Criteria</th>
                     <th className="px-3 py-2 text-left font-medium w-24">Marks</th>
+                    {editing && <th className="px-3 py-2 text-left font-medium w-16">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((m) => (
+                  {(editing ? editedData?.items || [] : items).map((m) => (
                     <tr key={m.no} className="border-b border-black/5 dark:border-white/5">
                       <td className="px-3 py-2 align-top whitespace-nowrap font-medium">{m.no}</td>
-                      <td className="px-3 py-2 align-top text-pretty">{m.criteria ?? "—"}</td>
-                      <td className="px-3 py-2 align-top whitespace-nowrap">{m.marks}</td>
+                      <td className="px-3 py-2 align-top">
+                        {editing ? (
+                          <textarea
+                            value={m.criteria || ''}
+                            onChange={(e) => {
+                              const updatedItems = editedData?.items.map(item =>
+                                item.no === m.no ? { ...item, criteria: e.target.value } : item
+                              );
+                              setEditedData(prev => prev ? { ...prev, items: updatedItems || [] } : null);
+                              setHasChanges(true);
+                            }}
+                            className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800 resize-y min-h-[60px]"
+                            rows={2}
+                          />
+                        ) : (
+                          <span className="text-pretty">{m.criteria ?? "—"}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 align-top whitespace-nowrap">
+                        {editing ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="50"
+                            value={m.marks}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              const updatedItems = editedData?.items.map(item =>
+                                item.no === m.no ? { ...item, marks: value } : item
+                              );
+                              setEditedData(prev => prev ? { ...prev, items: updatedItems || [] } : null);
+                              setHasChanges(true);
+                            }}
+                            className="w-16 px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                          />
+                        ) : (
+                          m.marks
+                        )}
+                      </td>
+                      {editing && (
+                        <td className="px-3 py-2 align-top">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updatedItems = editedData?.items.filter(item => item.no !== m.no) || [];
+                              setEditedData(prev => prev ? { ...prev, items: updatedItems } : null);
+                              setHasChanges(true);
+                            }}
+                            className="text-red-600 hover:text-red-800 text-sm px-2 py-1 rounded border border-red-300 hover:border-red-400"
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
+                  {editing && (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentItems = editedData?.items || [];
+                            const nextNo = Math.max(...currentItems.map(i => i.no), 0) + 1;
+                            const updatedItems = [...currentItems, { no: nextNo, marks: 0, criteria: '' }];
+                            setEditedData(prev => prev ? { ...prev, items: updatedItems } : null);
+                            setHasChanges(true);
+                          }}
+                          className="text-green-600 hover:text-green-800 text-sm px-3 py-1 rounded border border-green-300 hover:border-green-400"
+                        >
+                          + Add Criteria
+                        </button>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             )}
           </div>
+          {editing && (
+            <div className="flex justify-end mt-3">
+              <button
+                type="button"
+                disabled={!hasChanges || updating}
+                onClick={async () => {
+                  if (!editedData || !hasChanges) return;
+
+                  setUpdating(true);
+                  try {
+                    const marks: Record<number, number> = {};
+                    const criteria: Record<number, string> = {};
+
+                    // Clear all fields first
+                    for (let i = 1; i <= 10; i++) {
+                      marks[i] = 0;
+                      criteria[i] = '';
+                    }
+
+                    // Set values for existing items
+                    editedData.items.forEach(item => {
+                      marks[item.no] = item.marks;
+                      criteria[item.no] = item.criteria || '';
+                    });
+
+                    const response = await fetch('/marking-scheme', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        originalCourseCode: courseCode,
+                        originalExamType: examType,
+                        courseCode: editedData.courseCode,
+                        slot: editedData.slot,
+                        examType: editedData.examType,
+                        marks,
+                        criteria
+                      })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to update');
+
+                    // Update local state
+                    setItem({
+                      courseCode: editedData.courseCode,
+                      slot: editedData.slot,
+                      examType: editedData.examType,
+                      items: editedData.items
+                    });
+
+                    setHasChanges(false);
+                    setEditing(false);
+                    setEditedData(null);
+                  } catch (error) {
+                    console.error('Failed to update:', error);
+                    alert('Failed to update. Please try again.');
+                  } finally {
+                    setUpdating(false);
+                  }
+                }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  hasChanges
+                    ? 'bg-green-600 hover:bg-green-700 text-white shadow-md'
+                    : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {updating ? 'Updating...' : 'Update Scheme'}
+              </button>
+            </div>
+          )}
         </>
       )}
     </section>

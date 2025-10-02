@@ -59,3 +59,38 @@ export async function GET(req: Request) {
     );
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const { originalCourseCode, originalExamType, courseCode, slot, examType, marks, criteria } = await req.json();
+
+    if (!originalCourseCode || !originalExamType || !courseCode || !slot || !examType || !marks || !criteria) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Update the marking scheme with new data
+    const updateData: any = {
+      courseCode,
+      slot,
+      examType
+    };
+
+    for (let i = 1; i <= 10; i++) {
+      updateData[`mark${i}`] = marks[i] !== undefined ? marks[i] : null;
+      updateData[`criteria${i}`] = criteria[i] !== undefined ? criteria[i] : null;
+    }
+
+    const updated = await prisma.markingScheme.update({
+      where: { courseCode_slot_examType: { courseCode: originalCourseCode, slot, examType: originalExamType } },
+      data: updateData,
+    });
+
+    return NextResponse.json({ success: true, item: updated });
+  } catch (err: any) {
+    console.error("PUT /marking-scheme error", err);
+    return NextResponse.json(
+      { error: err?.message ?? "Failed to update Marking Scheme" },
+      { status: 500 }
+    );
+  }
+}
