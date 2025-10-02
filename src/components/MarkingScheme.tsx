@@ -111,7 +111,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
               <ImageOcr />
             </div>
             <div className="min-w-0">
-              <PromptRunner />
+              <PromptRunner targetModel="MarkingScheme" />
             </div>
           </div>
         </div>

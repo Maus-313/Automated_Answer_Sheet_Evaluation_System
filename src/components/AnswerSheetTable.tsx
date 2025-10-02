@@ -132,7 +132,7 @@ export default function AnswerSheetTable() {
               <ImageOcr />
             </div>
             <div className="min-w-0">
-              <PromptRunner />
+              <PromptRunner targetModel="AnswerSheet" />
             </div>
           </div>
         </div>

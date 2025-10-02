@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 
-export default function PromptRunner() {
+type PromptRunnerProps = {
+  targetModel?: 'QuestionPaper' | 'MarkingScheme' | 'AnswerSheet';
+};
+
+export default function PromptRunner({ targetModel = 'QuestionPaper' }: PromptRunnerProps) {
   const [text, setText] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +41,7 @@ export default function PromptRunner() {
       const res = await fetch("/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: inputValue }),
+        body: JSON.stringify({ prompt: inputValue, targetModel }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -54,13 +58,14 @@ export default function PromptRunner() {
   return (
     <section className="mt-6 w-full flex flex-col gap-4 items-center">
       <label className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">Output Box</label>
-      <div
+      <textarea
         aria-label="Output"
-        role="region"
-        className="w-full sm:max-w-2xl mx-auto max-h-[calc(100vh-240px)] overflow-auto rounded-md border border-black/10 dark:border-white/20 bg-transparent px-3 py-2 text-sm whitespace-pre-wrap"
-      >
-        {loading ? "Loading..." : text || "Output will appear here"}
-      </div>
+        value={loading ? "Loading..." : text || "Output will appear here"}
+        onChange={(e) => setText(e.target.value)}
+        readOnly={loading}
+        className="w-full sm:max-w-2xl mx-auto max-h-[calc(100vh-240px)] overflow-auto rounded-md border border-black/10 dark:border-white/20 bg-transparent px-3 py-2 text-sm whitespace-pre-wrap resize-none"
+        rows={10}
+      />
 
       <label className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">Prompt</label>
       <input

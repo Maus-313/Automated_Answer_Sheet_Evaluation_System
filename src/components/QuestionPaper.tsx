@@ -102,7 +102,7 @@ export default function QuestionPaper() {
               <ImageOcr />
             </div>
             <div className="min-w-0">
-              <PromptRunner />
+              <PromptRunner targetModel="QuestionPaper" />
             </div>
           </div>
         </div>
