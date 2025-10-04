@@ -122,7 +122,10 @@ Requirements:
 - If the text contains both questions and answers, extract only the answer parts.
 - Auto-detect exam type from content: look for "CAT", "FAT", "Assessment", "Quiz", etc. Default to 'ASSESSMENT' if unclear.
 - Include an async main() wrapper and prisma.$disconnect() in finally.
+- Automatically round of the the slot to nearest matching. Use this array for rounding off; All possible Slots = [A1, A2, B1, B2, C1, C2, D1, D2, E1, E2, F1, F2, G1, G2]. Some example if you detect slot to be something like FL round of it to F1; or for example you get something liek this GL-TG2 round off this to G2, Simple as as it is. Okay Don't run any stupid function to do this. You have to do this on your own
+- CRITICAL: Use literal values directly in the upsert object. Do NOT define variables like const rollNo = '...'; instead, put the values directly as strings or numbers in the where, update, and create blocks.
 
+- 
 Prisma shape reminder (AnswerSheet): { rollNo: string; name: string; slot: string; examType: 'CAT' | 'FAT' | 'ASSESSMENT'; answer1?: string | null; ... answer10?: string | null }
 
 Example format:

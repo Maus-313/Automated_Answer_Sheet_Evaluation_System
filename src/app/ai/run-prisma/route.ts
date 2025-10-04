@@ -43,7 +43,29 @@ function valOf(block: string, key: string): string | number | undefined {
 
 function parseCode(code: string): Parsed | null {
   // Normalize whitespace
-  const src = code.replace(/\r\n?/g, "\n");
+  let src = code.replace(/\r\n?/g, "\n");
+
+  // Extract variable declarations
+  const varRegex = /const\s+(\w+)\s*=\s*(?:'([^']*)'|(\d+))/g;
+  const variables: Record<string, string | number> = {};
+  let match;
+  while ((match = varRegex.exec(src)) !== null) {
+    const varName = match[1];
+    const varValue = match[2] !== undefined ? match[2] : (match[3] !== undefined ? parseInt(match[3]) : undefined);
+    if (varValue !== undefined) {
+      variables[varName] = varValue;
+    }
+  }
+
+  // Replace variables in src
+  for (const [varName, varValue] of Object.entries(variables)) {
+    const regex = new RegExp(`\\b${varName}\\b`, 'g');
+    if (typeof varValue === 'string') {
+      src = src.replace(regex, `'${varValue}'`);
+    } else {
+      src = src.replace(regex, varValue.toString());
+    }
+  }
 
   // Extract model name
   const modelMatch = src.match(/prisma\.(\w+)\.upsert/);
