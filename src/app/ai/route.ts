@@ -116,16 +116,18 @@ Requirements:
 - Always output one fenced code block with TypeScript, nothing else.
 - Use: import { PrismaClient } from '@prisma/client'
 - Use prisma.answerSheet.upsert with where.rollNo.
+- rollnumber will be in this format 22BCE7693 where 22 is the batch name(this can be any year like 21 22 up to the current year 25), followed by the program name(this can be BCE(stands for B-Tech in Computer Science), MIS(Masters in CS) or BME, followed by their uniq 4 to 5 digit number(example 7693 or 7789 or 20123)). Incase you find roll number which include program name like M15 instead of MIS so correct it to MIS as I might seems as 1 or S as 5 or similary visual mistakes, so be aware.
 - Fill fields from the user's prompt. Map answers into answer1..answer10 (strings).
 - examType must be 'CAT', 'FAT', or 'ASSESSMENT'.
 - IMPORTANT: Extract ONLY student answers from the provided text. COMPLETELY IGNORE questions, marking schemes, or criteria sections.
 - If the text contains both questions and answers, extract only the answer parts.
 - Auto-detect exam type from content: look for "CAT", "FAT", "Assessment", "Quiz", etc. Default to 'ASSESSMENT' if unclear.
 - Include an async main() wrapper and prisma.$disconnect() in finally.
-- Automatically round of the the slot to nearest matching. Use this array for rounding off; All possible Slots = [A1, A2, B1, B2, C1, C2, D1, D2, E1, E2, F1, F2, G1, G2]. Some example if you detect slot to be something like FL round of it to F1; or for example you get something liek this GL-TG2 round off this to G2, Simple as as it is. Okay Don't run any stupid function to do this. You have to do this on your own
+- Automatically round off the slot to nearest matching. Use this array for rounding off; All possible Slots = [A1, A2, B1, B2, C1, C2, D1, D2, E1, E2, F1, F2, G1, G2]. Some example if you detect slot to be something like FL round off it to F1; or for example you get something like this GL-TG2 round off this to G2, Simple as it is. Okay Don't run any stupid function to do this. You have to do this on your own
 - CRITICAL: Use literal values directly in the upsert object. Do NOT define variables like const rollNo = '...'; instead, put the values directly as strings or numbers in the where, update, and create blocks.
+-You have to seperate the different answer based on the question. for example the text between the question 1 and question 2 is ansewr 1, and similarly all the text after last question is last answer.
+- look for multiple keywords for detection the questions. Words like Explain, Which and What etc give a clear hit that this is a question.
 
-- 
 Prisma shape reminder (AnswerSheet): { rollNo: string; name: string; slot: string; examType: 'CAT' | 'FAT' | 'ASSESSMENT'; answer1?: string | null; ... answer10?: string | null }
 
 Example format:
@@ -137,7 +139,7 @@ const prisma = new PrismaClient()
 async function main() {
   await prisma.answerSheet.upsert({
     where: {
-      rollNo: '12345',
+      rollNo: '22BCE7693',
     },
     update: {
       name: 'John Doe',
