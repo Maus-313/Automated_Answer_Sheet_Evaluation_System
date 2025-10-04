@@ -9,7 +9,19 @@ export function cn(...inputs: ClassValue[]) {
 export async function exportToExcel(data: any[], filename: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Sheet1');
-  worksheet.addRows(data);
+
+  if (data.length > 0) {
+    // Add headers from object keys
+    const headers = Object.keys(data[0]);
+    worksheet.addRow(headers);
+
+    // Add data rows
+    data.forEach(item => {
+      const row = headers.map(header => item[header] ?? '');
+      worksheet.addRow(row);
+    });
+  }
+
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const link = document.createElement('a');
@@ -27,7 +39,19 @@ export async function exportToExcel(data: any[], filename: string) {
 export async function exportToCSV(data: any[], filename: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Sheet1');
-  worksheet.addRows(data);
+
+  if (data.length > 0) {
+    // Add headers from object keys
+    const headers = Object.keys(data[0]);
+    worksheet.addRow(headers);
+
+    // Add data rows
+    data.forEach(item => {
+      const row = headers.map(header => item[header] ?? '');
+      worksheet.addRow(row);
+    });
+  }
+
   const buffer = await workbook.csv.writeBuffer();
   const blob = new Blob([buffer], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
