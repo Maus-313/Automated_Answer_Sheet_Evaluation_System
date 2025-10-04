@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 
@@ -103,11 +103,11 @@ export default function ImageOcr() {
   }, [results]);
 
   // Broadcast combined text so other components (e.g., PromptRunner) can consume it
-  const lastEmittedRef = useRef<string>("");
-  if (typeof window !== "undefined" && combinedText !== lastEmittedRef.current) {
-    lastEmittedRef.current = combinedText;
-    window.dispatchEvent(new CustomEvent("ocr-text-changed", { detail: { text: combinedText } }));
-  }
+  useEffect(() => {
+    if (typeof window !== "undefined" && combinedText) {
+      window.dispatchEvent(new CustomEvent("ocr-text-changed", { detail: { text: combinedText } }));
+    }
+  }, [combinedText]);
 
   return (
     <div className="grid gap-4">
