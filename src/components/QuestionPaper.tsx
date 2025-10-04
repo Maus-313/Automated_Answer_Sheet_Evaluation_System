@@ -34,6 +34,7 @@ export default function QuestionPaper() {
   }>>({});
   const [hasChanges, setHasChanges] = useState<Record<string, boolean>>({});
   const [updating, setUpdating] = useState<Record<string, boolean>>({});
+  const [deleting, setDeleting] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -179,6 +180,37 @@ export default function QuestionPaper() {
                       className="text-sm rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
                     >
                       {isOpen ? "Collapse" : "Expand"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deleting[key]}
+                      onClick={async () => {
+                        if (!confirm(`Are you sure you want to delete the question paper for ${it.courseCode} (${it.examType}) in slot ${it.slot}?`)) return;
+                        setDeleting(prev => ({ ...prev, [key]: true }));
+                        try {
+                          const qs = new URLSearchParams({
+                            courseCode: it.courseCode,
+                            slot: it.slot,
+                            examType: it.examType ?? ''
+                          });
+                          const res = await fetch(`/question-paper?${qs.toString()}`, {
+                            method: 'DELETE'
+                          });
+                          if (!res.ok) throw new Error('Failed to delete');
+                          // Remove from local state
+                          setItems(prev => prev ? prev.filter(item =>
+                            !(item.courseCode === it.courseCode && item.slot === it.slot && item.examType === it.examType)
+                          ) : null);
+                        } catch (error) {
+                          console.error('Failed to delete:', error);
+                          alert('Failed to delete. Please try again.');
+                        } finally {
+                          setDeleting(prev => ({ ...prev, [key]: false }));
+                        }
+                      }}
+                      className="text-sm rounded-md border border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 px-2 py-1 disabled:opacity-50"
+                    >
+                      {deleting[key] ? "Deleting..." : "Delete"}
                     </button>
                   </div>
                 </div>

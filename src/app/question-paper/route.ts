@@ -40,6 +40,31 @@ export async function PUT(req: Request) {
   }
 }
 
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const courseCode = searchParams.get("courseCode")?.trim();
+    const slot = searchParams.get("slot")?.trim();
+    const examType = searchParams.get("examType")?.trim();
+
+    if (!courseCode || !slot || !examType) {
+      return NextResponse.json({ error: "Missing courseCode, slot, or examType" }, { status: 400 });
+    }
+
+    await prisma.questionPaper.delete({
+      where: { courseCode_slot_examType: { courseCode, slot, examType } },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error("DELETE /question-paper error", err);
+    return NextResponse.json(
+      { error: err?.message ?? "Failed to delete Question Paper" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
