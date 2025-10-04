@@ -18,3 +18,35 @@ export async function GET(req: Request) {
     );
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    const { rollNo, name, slot, examType, ...answers } = await req.json();
+
+    if (!rollNo || !name || !slot || !examType) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const data: any = {
+      rollNo,
+      name,
+      slot,
+      examType
+    };
+    for (let i = 1; i <= 10; i++) {
+      data[`answer${i}`] = answers[`answer${i}`] !== undefined ? answers[`answer${i}`] : null;
+    }
+
+    const created = await prisma.answerSheet.create({
+      data,
+    });
+
+    return NextResponse.json({ success: true, item: created });
+  } catch (err: any) {
+    console.error("POST /answers error", err);
+    return NextResponse.json(
+      { error: err?.message ?? "Failed to create AnswerSheet" },
+      { status: 500 }
+    );
+  }
+}

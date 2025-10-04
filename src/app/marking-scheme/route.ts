@@ -60,6 +60,39 @@ export async function GET(req: Request) {
   }
 }
 
+export async function POST(req: Request) {
+  try {
+    const { courseCode, slot, examType, marks, criteria } = await req.json();
+
+    if (!courseCode || !slot || !examType || !marks || !criteria) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const updateData: any = {
+      courseCode,
+      slot,
+      examType
+    };
+
+    for (let i = 1; i <= 10; i++) {
+      updateData[`mark${i}`] = marks[i] !== undefined ? marks[i] : null;
+      updateData[`criteria${i}`] = criteria[i] !== undefined ? criteria[i] : null;
+    }
+
+    const created = await prisma.markingScheme.create({
+      data: updateData,
+    });
+
+    return NextResponse.json({ success: true, item: created });
+  } catch (err: any) {
+    console.error("POST /marking-scheme error", err);
+    return NextResponse.json(
+      { error: err?.message ?? "Failed to create Marking Scheme" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(req: Request) {
   try {
     const { originalCourseCode, originalExamType, courseCode, slot, examType, marks, criteria } = await req.json();
@@ -90,6 +123,31 @@ export async function PUT(req: Request) {
     console.error("PUT /marking-scheme error", err);
     return NextResponse.json(
       { error: err?.message ?? "Failed to update Marking Scheme" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const courseCode = searchParams.get("courseCode")?.trim();
+    const slot = searchParams.get("slot")?.trim();
+    const examType = searchParams.get("examType")?.trim();
+
+    if (!courseCode || !slot || !examType) {
+      return NextResponse.json({ error: "Missing courseCode, slot, or examType" }, { status: 400 });
+    }
+
+    await prisma.markingScheme.delete({
+      where: { courseCode_slot_examType: { courseCode, slot, examType: examType as any } },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error("DELETE /marking-scheme error", err);
+    return NextResponse.json(
+      { error: err?.message ?? "Failed to delete Marking Scheme" },
       { status: 500 }
     );
   }

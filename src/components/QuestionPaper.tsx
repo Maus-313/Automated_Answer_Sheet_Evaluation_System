@@ -25,6 +25,7 @@ export default function QuestionPaper() {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [slotFilter, setSlotFilter] = useState<string>("");
   const [addOpen, setAddOpen] = useState(false);
+  const [manualAddOpen, setManualAddOpen] = useState(false);
   const [editing, setEditing] = useState<Record<string, boolean>>({});
   const [editedMarks, setEditedMarks] = useState<Record<string, Record<number, number>>>({});
   const [editedData, setEditedData] = useState<Record<string, {
@@ -68,6 +69,177 @@ export default function QuestionPaper() {
   const slots = SLOTS;
   const filtered = (items ?? []).filter((i) => (slotFilter ? i.slot === slotFilter : true));
 
+  function ManualAddForm({ slot, onSuccess }: { slot: string; onSuccess: () => void }) {
+    const [formData, setFormData] = useState({
+      courseCode: '',
+      examType: '',
+      subject: '',
+      questions: [{ no: 1, text: '', marks: 0 }]
+    });
+    const [saving, setSaving] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setSaving(true);
+      try {
+        const marks: Record<number, number> = {};
+        const questionTexts: Record<number, string> = {};
+        formData.questions.forEach(q => {
+          marks[q.no] = q.marks;
+          questionTexts[q.no] = q.text;
+        });
+        const totalMarks = Object.values(marks).reduce((sum, m) => sum + m, 0);
+
+        const res = await fetch('/question-paper', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            courseCode: formData.courseCode,
+            slot,
+            examType: formData.examType,
+            subject: formData.subject,
+            marks,
+            totalMarks,
+            questions: questionTexts
+          })
+        });
+        if (!res.ok) throw new Error('Failed to add');
+        onSuccess();
+      } catch (error) {
+        alert('Failed to add. Please try again.');
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Course Code</label>
+            <input
+              type="text"
+              required
+              value={formData.courseCode}
+              onChange={(e) => setFormData(prev => ({ ...prev, courseCode: e.target.value }))}
+              className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Exam Type</label>
+            <select
+              required
+              value={formData.examType}
+              onChange={(e) => setFormData(prev => ({ ...prev, examType: e.target.value }))}
+              className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+            >
+              <option value="">Select</option>
+              <option value="CAT">CAT</option>
+              <option value="FAT">FAT</option>
+              <option value="ASSESSMENT">Assessment/Quiz</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Subject</label>
+            <input
+              type="text"
+              required
+              value={formData.subject}
+              onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+              className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Questions</label>
+          <div className="space-y-2">
+            {formData.questions.map((q, idx) => (
+              <div key={q.no} className="flex gap-2 items-end">
+                <div className="w-12">
+                  <label className="block text-xs mb-1">Q{q.no}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={q.no}
+                    onChange={(e) => {
+                      const newNo = parseInt(e.target.value);
+                      setFormData(prev => ({
+                        ...prev,
+                        questions: prev.questions.map(qq => qq.no === q.no ? { ...qq, no: newNo } : qq)
+                      }));
+                    }}
+                    className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                  />
+                </div>
+                <div className="flex-1">
+                  <textarea
+                    placeholder="Question text"
+                    value={q.text}
+                    onChange={(e) => {
+                      const newQuestions = [...formData.questions];
+                      newQuestions[idx].text = e.target.value;
+                      setFormData(prev => ({ ...prev, questions: newQuestions }));
+                    }}
+                    className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800 resize-y min-h-[40px]"
+                    rows={1}
+                  />
+                </div>
+                <div className="w-16">
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Marks"
+                    value={q.marks}
+                    onChange={(e) => {
+                      const newQuestions = [...formData.questions];
+                      newQuestions[idx].marks = parseInt(e.target.value) || 0;
+                      setFormData(prev => ({ ...prev, questions: newQuestions }));
+                    }}
+                    className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      questions: prev.questions.filter((_, i) => i !== idx)
+                    }));
+                  }}
+                  className="px-2 py-1 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const nextNo = Math.max(...formData.questions.map(q => q.no)) + 1;
+              setFormData(prev => ({
+                ...prev,
+                questions: [...prev.questions, { no: nextNo, text: '', marks: 0 }]
+              }));
+            }}
+            className="mt-2 text-green-600 hover:text-green-800 text-sm px-3 py-1 rounded border border-green-300 hover:border-green-400"
+          >
+            + Add Question
+          </button>
+        </div>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm disabled:opacity-50"
+          >
+            {saving ? 'Adding...' : 'Add Question Paper'}
+          </button>
+        </div>
+      </form>
+    );
+  }
+
   return (
     <section className="w-full flex flex-col gap-3 rounded-xl p-4 bg-gradient-to-b from-sky-50 to-white dark:from-sky-900/70 dark:to-neutral-950 ring-2 ring-sky-200 dark:ring-sky-700/70 shadow-md">
       <div className="flex items-center justify-between gap-3">
@@ -78,7 +250,7 @@ export default function QuestionPaper() {
             onClick={() => setAddOpen((v) => !v)}
             className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-sky-600 to-blue-600 shadow-md shadow-sky-500/30 hover:shadow-lg hover:shadow-sky-500/40 hover:scale-[1.02] transition-all"
           >
-            {addOpen ? "Close Add" : "+ Add"}
+            {addOpen ? "Close Add" : "Add with Image/PDF"}
           </button>
         </div>
         <div className="flex items-center gap-2">
@@ -116,6 +288,25 @@ export default function QuestionPaper() {
               <PromptRunner targetModel="QuestionPaper" />
             </div>
           </div>
+        </div>
+      )}
+      {manualAddOpen && (
+        <div className="rounded-md border border-black/10 dark:border-white/20 p-3 bg-white/50 dark:bg-neutral-900/30">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">Manually Add Question Paper</h3>
+            <button
+              type="button"
+              onClick={() => setManualAddOpen(false)}
+              className="text-xs rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              Close
+            </button>
+          </div>
+          <ManualAddForm slot={slotFilter} onSuccess={() => {
+            setManualAddOpen(false);
+            // Refresh data
+            window.location.reload();
+          }} />
         </div>
       )}
       {loading ? (
@@ -473,6 +664,17 @@ export default function QuestionPaper() {
               </div>
             );
           })}
+        </div>
+      )}
+      {slotFilter && (
+        <div className="flex justify-center mt-4">
+          <button
+            type="button"
+            onClick={() => setManualAddOpen(true)}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm shadow-md"
+          >
+            + Manually Add Question Paper
+          </button>
         </div>
       )}
     </section>

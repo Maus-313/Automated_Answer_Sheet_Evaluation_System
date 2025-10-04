@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ExamType } from "@prisma/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,6 +41,40 @@ export async function PUT(req: Request) {
   }
 }
 
+export async function POST(req: Request) {
+  try {
+    const { courseCode, slot, examType, subject, marks, totalMarks, questions } = await req.json();
+
+    if (!courseCode || !slot || !examType || !subject || !marks || typeof totalMarks !== 'number') {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const updateData: any = {
+      courseCode,
+      slot,
+      examType,
+      subject,
+      totalMarks
+    };
+    for (let i = 1; i <= 10; i++) {
+      updateData[`mark${i}`] = marks[i] !== undefined ? marks[i] : null;
+      updateData[`question${i}`] = questions && questions[`question${i}`] !== undefined ? questions[`question${i}`] : null;
+    }
+
+    const created = await prisma.questionPaper.create({
+      data: updateData,
+    });
+
+    return NextResponse.json({ success: true, item: created });
+  } catch (err: any) {
+    console.error("POST /question-paper error", err);
+    return NextResponse.json(
+      { error: err?.message ?? "Failed to create Question Paper" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -52,7 +87,7 @@ export async function DELETE(req: Request) {
     }
 
     await prisma.questionPaper.delete({
-      where: { courseCode_slot_examType: { courseCode, slot, examType } },
+      where: { courseCode_slot_examType: { courseCode, slot, examType: examType as ExamType } },
     });
 
     return NextResponse.json({ success: true });

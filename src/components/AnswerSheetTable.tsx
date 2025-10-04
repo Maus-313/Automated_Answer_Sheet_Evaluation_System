@@ -41,6 +41,7 @@ export default function AnswerSheetTable() {
   const [slotFilter, setSlotFilter] = useState<string>("");
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [addOpen, setAddOpen] = useState(false);
+  const [manualAddOpen, setManualAddOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +65,158 @@ export default function AnswerSheetTable() {
 
   const filtered = useMemo(() => (rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : true)), [rows, slotFilter]);
 
+  function ManualAddForm({ slot, onSuccess }: { slot: string; onSuccess: () => void }) {
+    const [formData, setFormData] = useState({
+      rollNo: '',
+      name: '',
+      examType: '',
+      answers: [{ no: 1, text: '' }]
+    });
+    const [saving, setSaving] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setSaving(true);
+      try {
+        const answerData: Record<string, string | null> = {};
+        formData.answers.forEach(ans => {
+          answerData[`answer${ans.no}`] = ans.text || null;
+        });
+
+        const res = await fetch('/answers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rollNo: formData.rollNo,
+            name: formData.name,
+            slot,
+            examType: formData.examType,
+            ...answerData
+          })
+        });
+        if (!res.ok) throw new Error('Failed to add');
+        onSuccess();
+      } catch (error) {
+        alert('Failed to add. Please try again.');
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Roll No</label>
+            <input
+              type="text"
+              required
+              value={formData.rollNo}
+              onChange={(e) => setFormData(prev => ({ ...prev, rollNo: e.target.value }))}
+              className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Name</label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Exam Type</label>
+            <select
+              required
+              value={formData.examType}
+              onChange={(e) => setFormData(prev => ({ ...prev, examType: e.target.value }))}
+              className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+            >
+              <option value="">Select</option>
+              <option value="CAT">CAT</option>
+              <option value="FAT">FAT</option>
+              <option value="ASSESSMENT">Assessment/Quiz</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Answers</label>
+          <div className="space-y-2">
+            {formData.answers.map((ans, idx) => (
+              <div key={ans.no} className="flex gap-2 items-end">
+                <div className="w-12">
+                  <label className="block text-xs mb-1">Q{ans.no}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={ans.no}
+                    onChange={(e) => {
+                      const newNo = parseInt(e.target.value);
+                      setFormData(prev => ({
+                        ...prev,
+                        answers: prev.answers.map(a => a.no === ans.no ? { ...a, no: newNo } : a)
+                      }));
+                    }}
+                    className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                  />
+                </div>
+                <div className="flex-1">
+                  <textarea
+                    placeholder="Answer text"
+                    value={ans.text}
+                    onChange={(e) => {
+                      const newAnswers = [...formData.answers];
+                      newAnswers[idx].text = e.target.value;
+                      setFormData(prev => ({ ...prev, answers: newAnswers }));
+                    }}
+                    className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800 resize-y min-h-[40px]"
+                    rows={1}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      answers: prev.answers.filter((_, i) => i !== idx)
+                    }));
+                  }}
+                  className="px-2 py-1 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const nextNo = Math.max(...formData.answers.map(a => a.no)) + 1;
+              setFormData(prev => ({
+                ...prev,
+                answers: [...prev.answers, { no: nextNo, text: '' }]
+              }));
+            }}
+            className="mt-2 text-green-600 hover:text-green-800 text-sm px-3 py-1 rounded border border-green-300 hover:border-green-400"
+          >
+            + Add Answer
+          </button>
+        </div>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm disabled:opacity-50"
+          >
+            {saving ? 'Adding...' : 'Add Answer Sheet'}
+          </button>
+        </div>
+      </form>
+    );
+  }
+
   return (
     <section className="w-full flex flex-col gap-3 rounded-xl p-4 bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-900/70 dark:to-neutral-950 ring-2 ring-emerald-200 dark:ring-emerald-700/70 shadow-md">
       <div className="flex items-center justify-between gap-3">
@@ -74,7 +227,7 @@ export default function AnswerSheetTable() {
             onClick={() => setAddOpen((v) => !v)}
             className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-emerald-600 to-teal-600 shadow-md shadow-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/40 hover:scale-[1.02] transition-all"
           >
-            {addOpen ? "Close Add" : "+ Add"}
+            {addOpen ? "Close Add" : "Add with Image/PDF"}
           </button>
         </div>
         <div className="flex items-center gap-2">
@@ -112,6 +265,25 @@ export default function AnswerSheetTable() {
               <PromptRunner targetModel="AnswerSheet" />
             </div>
           </div>
+        </div>
+      )}
+      {manualAddOpen && (
+        <div className="rounded-md border border-black/10 dark:border-white/20 p-3 bg-white/50 dark:bg-neutral-900/30">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">Manually Add Answer Sheet</h3>
+            <button
+              type="button"
+              onClick={() => setManualAddOpen(false)}
+              className="text-xs rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              Close
+            </button>
+          </div>
+          <ManualAddForm slot={slotFilter} onSuccess={() => {
+            setManualAddOpen(false);
+            // Refresh data
+            window.location.reload();
+          }} />
         </div>
       )}
       <div className="w-full rounded-md border border-black/10 dark:border-white/20">
@@ -172,6 +344,17 @@ export default function AnswerSheetTable() {
                 </div>
               );
             })}
+            {slotFilter && (
+              <div className="flex justify-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => setManualAddOpen(true)}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm shadow-md"
+                >
+                  + Manually Add Answer Sheet
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
