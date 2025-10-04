@@ -98,7 +98,7 @@ export default function MarkSheetTable() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => exportToExcel(filtered, `MarkSheet_${slotFilter}`)}
+                onClick={async () => await exportToExcel(filtered, `MarkSheet_${slotFilter}`)}
                 className="flex items-center gap-1 text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-green-600 to-emerald-600 shadow-md shadow-green-500/30 hover:shadow-lg hover:shadow-green-500/40 hover:scale-[1.02] transition-all"
               >
                 <Download className="h-3 w-3" />
@@ -106,7 +106,7 @@ export default function MarkSheetTable() {
               </button>
               <button
                 type="button"
-                onClick={() => exportToCSV(filtered, `MarkSheet_${slotFilter}`)}
+                onClick={async () => await exportToCSV(filtered, `MarkSheet_${slotFilter}`)}
                 className="flex items-center gap-1 text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 hover:scale-[1.02] transition-all"
               >
                 <Download className="h-3 w-3" />
