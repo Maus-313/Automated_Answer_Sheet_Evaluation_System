@@ -9,12 +9,12 @@ export async function POST(req: Request) {
   try {
     const { qp, answers, ms } = await req.json();
 
-    if (!qp || !answers || !ms || !Array.isArray(answers)) {
+    if (!qp || !answers || !Array.isArray(answers)) {
       return NextResponse.json({ error: "Missing qp, answers array, or ms" }, { status: 400 });
     }
 
     const questions = qp.questions || [];
-    const criteria = ms.items || [];
+    const criteria = ms?.items || [];
     const results = [];
 
     for (const as of answers) {
