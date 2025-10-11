@@ -46,8 +46,10 @@ export default function Evaluator() {
   const [selectedAnsRollNos, setSelectedAnsRollNos] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
-  const [ms, setMs] = useState<MSItem | null>(null);
+  const [availableMs, setAvailableMs] = useState<MSItem[]>([]);
   const [msLoading, setMsLoading] = useState(false);
+  const [selectedMsIdx, setSelectedMsIdx] = useState<string>("");
+  const ms = selectedMsIdx !== "" ? availableMs[Number(selectedMsIdx)] || null : null;
 
   const [view, setView] = useState<{
     qp?: QPItem;
@@ -61,6 +63,7 @@ export default function Evaluator() {
     if (!slot) {
       setQps(null); setAnswers(null);
       setSelectedQpIdx(""); setSelectedAnsRollNos([]); setSelectAll(false);
+      setAvailableMs([]); setSelectedMsIdx("");
       return;
     }
     let cancelled = false;
@@ -79,6 +82,7 @@ export default function Evaluator() {
           setQps(Array.isArray(qpData?.items) ? qpData.items : []);
           setAnswers(Array.isArray(asData?.items) ? asData.items : []);
           setSelectedQpIdx(""); setSelectedAnsRollNos([]); setSelectAll(false);
+          setSelectedMsIdx("");
         }
       } catch (e: any) {
         if (!cancelled) {
@@ -92,28 +96,33 @@ export default function Evaluator() {
     return () => { cancelled = true; };
   }, [slot]);
 
-  // Load MS for selected QP
+  // Load all MS for slot
   useEffect(() => {
-    if (!slot || !selectedQpIdx) { setMs(null); return; }
-    const qp = qps?.[Number(selectedQpIdx)];
-    if (!qp) { setMs(null); return; }
+    if (!slot) {
+      setAvailableMs([]);
+      setSelectedMsIdx("");
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
         setMsLoading(true);
-        const qs = new URLSearchParams({ slot, courseCode: qp.courseCode, examType: String(qp.examType || "") });
-        const res = await fetch(`/marking-scheme?${qs.toString()}`, { cache: "no-store" });
+        const qs = `?slot=${encodeURIComponent(slot)}`;
+        const res = await fetch(`/marking-scheme${qs}`, { cache: "no-store" });
         const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Failed to load marking scheme");
-        if (!cancelled) setMs(data?.item ?? null);
+        if (!res.ok) throw new Error(data?.error || "Failed to load marking schemes");
+        if (!cancelled) {
+          setAvailableMs(Array.isArray(data?.items) ? data.items : []);
+          setSelectedMsIdx("");
+        }
       } catch {
-        if (!cancelled) setMs(null);
+        if (!cancelled) setAvailableMs([]);
       } finally {
         if (!cancelled) setMsLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [slot, selectedQpIdx]);
+  }, [slot]);
 
   const canEvaluate = !!slot && selectedQpIdx !== "" && selectedAnsRollNos.length > 0;
   const selectedQp = selectedQpIdx !== "" ? qps?.[Number(selectedQpIdx)] : undefined;
@@ -225,14 +234,25 @@ export default function Evaluator() {
 
         <div className="rounded-md border border-black/10 dark:border-white/20 p-3">
           <div className="text-sm font-medium mb-2">Marking Scheme</div>
-          {!slot || !selectedQp ? (
-            <div className="text-sm">No Scheme Found: General Sscheme Applied</div>
+          {!slot ? (
+            <div className="text-sm text-muted-foreground">Please Select A Slot</div>
           ) : msLoading ? (
             <div className="text-sm"><LoadingDots /></div>
-          ) : !ms ? (
-            <div className="text-sm">No Scheme Found: General Sscheme Applied</div>
+          ) : availableMs.length === 0 ? (
+            <div className="text-sm">No Marking Schemes Found: General Scheme Applied</div>
           ) : (
-            <div className="text-sm text-muted-foreground">Loaded for {ms.courseCode}{ms.examType ? ` • ${ms.examType}` : ""}</div>
+            <select
+              className="w-full text-sm rounded-md border border-black/10 dark:border-white/20 px-2 py-1 bg-white text-black dark:bg-neutral-900 dark:text-white"
+              value={selectedMsIdx}
+              onChange={(e) => setSelectedMsIdx(e.target.value)}
+            >
+              <option value="">None (General Scheme)</option>
+              {availableMs.map((scheme, idx) => (
+                <option key={`${scheme.courseCode}-${scheme.examType}-${idx}`} value={String(idx)}>
+                  {scheme.courseCode}{scheme.examType ? ` • ${scheme.examType}` : ""} • {scheme.items.length} questions
+                </option>
+              ))}
+            </select>
           )}
         </div>
       </div>
