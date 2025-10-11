@@ -30,10 +30,10 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const { rollNo, answer1, answer2, answer3, answer4, answer5, answer6, answer7, answer8, answer9, answer10 } = body;
+    const { originalRollNo, rollNo, name, slot, examType, answer1, answer2, answer3, answer4, answer5, answer6, answer7, answer8, answer9, answer10 } = body;
 
-    if (!rollNo) {
-      return NextResponse.json({ error: "rollNo is required" }, { status: 400 });
+    if (!originalRollNo) {
+      return NextResponse.json({ error: "originalRollNo is required" }, { status: 400 });
     }
 
     const anyPrisma = prisma as any;
@@ -46,22 +46,49 @@ export async function PUT(req: Request) {
       .filter(m => m !== null && m !== undefined)
       .reduce((sum, m) => sum + (m || 0), 0);
 
-    const updated = await anyPrisma.markingSheet.update({
-      where: { rollNo },
-      data: {
-        answer1,
-        answer2,
-        answer3,
-        answer4,
-        answer5,
-        answer6,
-        answer7,
-        answer8,
-        answer9,
-        answer10,
-        totalMarks: marks
+    const updateData: any = {
+      answer1,
+      answer2,
+      answer3,
+      answer4,
+      answer5,
+      answer6,
+      answer7,
+      answer8,
+      answer9,
+      answer10,
+      totalMarks: marks
+    };
+
+    if (name !== undefined) updateData.name = name;
+    if (slot !== undefined) updateData.slot = slot;
+    if (examType !== undefined) updateData.examType = examType;
+
+    let updated;
+    if (rollNo && rollNo !== originalRollNo) {
+      // RollNo is changing, need to handle carefully
+      // First, check if new rollNo exists
+      const existing = await anyPrisma.markingSheet.findUnique({ where: { rollNo } });
+      if (existing) {
+        return NextResponse.json({ error: "New roll number already exists" }, { status: 400 });
       }
-    });
+      // Delete old record and create new one
+      await anyPrisma.markingSheet.delete({ where: { rollNo: originalRollNo } });
+      updated = await anyPrisma.markingSheet.create({
+        data: {
+          rollNo,
+          name: name || '',
+          slot: slot || '',
+          examType: examType || 'CAT',
+          ...updateData
+        }
+      });
+    } else {
+      updated = await anyPrisma.markingSheet.update({
+        where: { rollNo: originalRollNo },
+        data: updateData
+      });
+    }
 
     return NextResponse.json({ item: updated });
   } catch (err: any) {

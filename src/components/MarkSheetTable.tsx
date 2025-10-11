@@ -34,6 +34,7 @@ export default function MarkSheetTable() {
   const [slotFilter, setSlotFilter] = useState<string>("");
   const [editing, setEditing] = useState<Record<string, boolean>>({});
   const [editedMarks, setEditedMarks] = useState<Record<string, Record<number, number>>>({});
+  const [editedData, setEditedData] = useState<Record<string, Partial<MarkingSheet>>>({});
   const [updating, setUpdating] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -151,10 +152,72 @@ export default function MarkSheetTable() {
                 const isEditing = editing[r.rollNo];
                 return (
                   <tr key={r.rollNo} className="border-b border-black/5 dark:border-white/5">
-                    <td className="px-3 py-2 align-top whitespace-nowrap">{r.rollNo}</td>
-                    <td className="px-3 py-2 align-top">{r.name}</td>
-                    <td className="px-3 py-2 align-top">{r.slot}</td>
-                    <td className="px-3 py-2 align-top">{r.examType}</td>
+                    <td className="px-3 py-2 align-top whitespace-nowrap">
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editedData[r.rollNo]?.rollNo ?? r.rollNo}
+                          onChange={(e) => setEditedData(prev => ({
+                            ...prev,
+                            [r.rollNo]: { ...prev[r.rollNo], rollNo: e.target.value }
+                          }))}
+                          className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                        />
+                      ) : (
+                        r.rollNo
+                      )}
+                    </td>
+                    <td className="px-3 py-2 align-top">
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editedData[r.rollNo]?.name ?? r.name}
+                          onChange={(e) => setEditedData(prev => ({
+                            ...prev,
+                            [r.rollNo]: { ...prev[r.rollNo], name: e.target.value }
+                          }))}
+                          className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                        />
+                      ) : (
+                        r.name
+                      )}
+                    </td>
+                    <td className="px-3 py-2 align-top">
+                      {isEditing ? (
+                        <select
+                          value={editedData[r.rollNo]?.slot ?? r.slot}
+                          onChange={(e) => setEditedData(prev => ({
+                            ...prev,
+                            [r.rollNo]: { ...prev[r.rollNo], slot: e.target.value }
+                          }))}
+                          className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                        >
+                          {SLOTS.map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        r.slot
+                      )}
+                    </td>
+                    <td className="px-3 py-2 align-top">
+                      {isEditing ? (
+                        <select
+                          value={editedData[r.rollNo]?.examType ?? r.examType}
+                          onChange={(e) => setEditedData(prev => ({
+                            ...prev,
+                            [r.rollNo]: { ...prev[r.rollNo], examType: e.target.value }
+                          }))}
+                          className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                        >
+                          <option value="CAT">CAT</option>
+                          <option value="FAT">FAT</option>
+                          <option value="ASSESSMENT">Assessment/Quiz</option>
+                        </select>
+                      ) : (
+                        r.examType
+                      )}
+                    </td>
                     <td className="px-3 py-2 align-top">
                       {isEditing
                         ? [1,2,3,4,5,6,7,8,9,10].reduce((sum, i) => sum + (editedMarks[r.rollNo]?.[i] ?? (r[`answer${i}` as keyof MarkingSheet] as number ?? 0)), 0)
@@ -192,24 +255,40 @@ export default function MarkSheetTable() {
                             onClick={async () => {
                               setUpdating(prev => ({ ...prev, [r.rollNo]: true }));
                               try {
-                                const updates: Record<string, number | null> = {};
+                                const updates: Record<string, number | null | string> = {};
                                 for (let i = 1; i <= 10; i++) {
                                   updates[`answer${i}`] = editedMarks[r.rollNo]?.[i] ?? r[`answer${i}` as keyof MarkingSheet] as number ?? null;
+                                }
+                                const newData = editedData[r.rollNo];
+                                if (newData) {
+                                  if (newData.rollNo) updates.rollNo = newData.rollNo;
+                                  if (newData.name) updates.name = newData.name;
+                                  if (newData.slot) updates.slot = newData.slot;
+                                  if (newData.examType) updates.examType = newData.examType;
                                 }
                                 const res = await fetch('/marking-sheets', {
                                   method: 'PUT',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
-                                    rollNo: r.rollNo,
+                                    originalRollNo: r.rollNo,
                                     ...updates
                                   })
                                 });
                                 if (!res.ok) throw new Error('Failed to update');
                                 const data = await res.json();
                                 // Update local state
-                                setRows(prev => prev ? prev.map(row => row.rollNo === r.rollNo ? data.item : row) : null);
+                                setRows(prev => {
+                                  if (!prev) return null;
+                                  const filtered = prev.filter(row => row.rollNo !== r.rollNo);
+                                  return [...filtered, data.item];
+                                });
                                 setEditing(prev => ({ ...prev, [r.rollNo]: false }));
                                 setEditedMarks(prev => {
+                                  const newState = { ...prev };
+                                  delete newState[r.rollNo];
+                                  return newState;
+                                });
+                                setEditedData(prev => {
                                   const newState = { ...prev };
                                   delete newState[r.rollNo];
                                   return newState;
@@ -230,6 +309,11 @@ export default function MarkSheetTable() {
                             onClick={() => {
                               setEditing(prev => ({ ...prev, [r.rollNo]: false }));
                               setEditedMarks(prev => {
+                                const newState = { ...prev };
+                                delete newState[r.rollNo];
+                                return newState;
+                              });
+                              setEditedData(prev => {
                                 const newState = { ...prev };
                                 delete newState[r.rollNo];
                                 return newState;

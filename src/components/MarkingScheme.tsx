@@ -30,8 +30,8 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
   const [slot, setSlot] = useState<string>("");
   const [addOpen, setAddOpen] = useState(false);
   const [manualAddOpen, setManualAddOpen] = useState(false);
-  const [manualSlot, setManualSlot] = useState<string>("");
   const [editing, setEditing] = useState(false);
+  const [manualSlot, setManualSlot] = useState<string>("");
   const [editedData, setEditedData] = useState<{
     courseCode: string;
     slot: string;
