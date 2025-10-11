@@ -262,62 +262,6 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">Marking Scheme</h2>
-          {selectedScheme && (
-            <button
-              type="button"
-              onClick={() => {
-                if (editing) {
-                  setEditedData(null);
-                  setHasChanges(false);
-                } else {
-                  setEditedData({
-                    courseCode: courseCode || '',
-                    slot: slotValue || '',
-                    examType: examType || '',
-                    items: [...schemeItems]
-                  });
-                }
-                setEditing(!editing);
-              }}
-              className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/30 hover:shadow-lg hover:shadow-purple-500/40 hover:scale-[1.02] transition-all"
-            >
-              {editing ? "Cancel Edit" : "Edit"}
-            </button>
-          )}
-          {selectedScheme && (
-            <button
-              type="button"
-              disabled={deleting}
-              onClick={async () => {
-                if (!confirm(`Are you sure you want to delete the marking scheme for ${courseCode} (${examType}) in slot ${slotValue}?`)) return;
-                setDeleting(true);
-                try {
-                  const qs = new URLSearchParams({
-                    courseCode: courseCode || '',
-                    slot: slotValue || '',
-                    examType: examType || ''
-                  });
-                  const res = await fetch(`/marking-scheme?${qs.toString()}`, {
-                    method: 'DELETE'
-                  });
-                  if (!res.ok) throw new Error('Failed to delete');
-                  // Clear local state
-                  setSchemes(prev => prev.filter(s => !(s.courseCode === courseCode && s.examType === examType && s.slot === slotValue)));
-                  if (selectedScheme?.courseCode === courseCode && selectedScheme?.examType === examType) {
-                    setSelectedScheme(schemes.length > 1 ? schemes[0] : null);
-                  }
-                } catch (error) {
-                  console.error('Failed to delete:', error);
-                  alert('Failed to delete. Please try again.');
-                } finally {
-                  setDeleting(false);
-                }
-              }}
-              className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-red-600 to-red-700 shadow-md shadow-red-500/30 hover:shadow-lg hover:shadow-red-500/40 hover:scale-[1.02] transition-all disabled:opacity-50"
-            >
-              {deleting ? "Deleting..." : "Delete"}
-            </button>
-          )}
           <button
             type="button"
             onClick={() => setAddOpen((v) => !v)}
@@ -350,96 +294,63 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
           </div>
         ) : null}
       </div>
-      {addOpen && (
-        <div className="rounded-md border border-black/10 dark:border-white/20 p-3 bg-white/50 dark:bg-neutral-900/30">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold">Add Marking Scheme</h3>
-            <button
-              type="button"
-              onClick={() => setAddOpen(false)}
-              className="text-xs rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
-            >
-              Close
-            </button>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="min-w-0">
-              <ImageOcr />
-            </div>
-            <div className="min-w-0">
-              <PromptRunner targetModel="MarkingScheme" />
-            </div>
-          </div>
-        </div>
-      )}
-      {manualAddOpen && (
-        <div className="rounded-md border border-black/10 dark:border-white/20 p-3 bg-white/50 dark:bg-neutral-900/30">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold">Manually Add Marking Scheme</h3>
-            <button
-              type="button"
-              onClick={() => setManualAddOpen(false)}
-              className="text-xs rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
-            >
-              Close
-            </button>
-          </div>
-          <ManualAddForm slot={slot || undefined} onSuccess={() => {
-            setManualAddOpen(false);
-            // Refresh data
-            if (slot) {
-              // Re-fetch schemes for the slot
-              fetch(`/marking-scheme?slot=${encodeURIComponent(slot)}`, { cache: "no-store" })
-                .then(res => res.json())
-                .then(data => {
-                  setSchemes(data?.items ?? []);
-                  setSelectedScheme(data?.items?.[0] ?? null);
-                })
-                .catch(err => console.error('Failed to refresh schemes:', err));
-            }
-          }} />
-        </div>
-      )}
-      {loading || error || (!selectedScheme && !hasProps) ? (
-        <div className="w-full rounded-md border border-black/10 dark:border-white/20">
-          {loading ? (
-            <div className="px-3 py-2 text-sm"><LoadingDots /></div>
-          ) : error ? (
-            <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400">{error}</div>
-          ) : !slot ? (
-            <div className="px-3 py-2 text-sm">Please Select A Slot</div>
-          ) : schemes.length === 0 ? (
-            <div className="px-3 py-2 text-sm">No Record Found</div>
-          ) : (
-            <div className="px-3 py-2 text-sm">Select a marking scheme from the list below</div>
-          )}
-        </div>
-      ) : schemes.length > 1 && !hasProps ? (
-        <div className="w-full rounded-md border border-black/10 dark:border-white/20">
-          <div className="px-3 py-2 text-sm font-medium">Available Marking Schemes for Slot {slot}:</div>
-          <div className="grid gap-2 p-3">
-            {schemes.map((scheme, idx) => (
-              <div
-                key={`${scheme.courseCode}-${scheme.examType}-${idx}`}
-                className={`rounded-md border p-3 cursor-pointer transition-colors ${
-                  selectedScheme?.courseCode === scheme.courseCode && selectedScheme?.examType === scheme.examType
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-black/10 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
-                onClick={() => setSelectedScheme(scheme)}
-              >
-                <div className="text-sm">
-                  <div><span className="font-medium">Course:</span> {scheme.courseCode}</div>
-                  <div><span className="font-medium">Exam Type:</span> {scheme.examType}</div>
-                  <div><span className="font-medium">Questions:</span> {scheme.items.length}</div>
-                  <div><span className="font-medium">Total Marks:</span> {scheme.items.reduce((sum, i) => sum + (i.marks || 0), 0)}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
+      {editing ? (
         <>
+          <div className="flex items-center justify-end gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (editing) {
+                  setEditedData(null);
+                  setHasChanges(false);
+                } else {
+                  setEditedData({
+                    courseCode: courseCode || '',
+                    slot: slotValue || '',
+                    examType: examType || '',
+                    items: [...schemeItems]
+                  });
+                }
+                setEditing(!editing);
+              }}
+              className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/30 hover:shadow-lg hover:shadow-purple-500/40 hover:scale-[1.02] transition-all"
+            >
+              {editing ? "Cancel Edit" : "Edit"}
+            </button>
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={async () => {
+                if (!confirm(`Are you sure you want to delete the marking scheme for ${courseCode} (${examType}) in slot ${slotValue}?`)) return;
+                setDeleting(true);
+                try {
+                  const qs = new URLSearchParams({
+                    courseCode: courseCode || '',
+                    slot: slotValue || '',
+                    examType: examType || ''
+                  });
+                  const res = await fetch(`/marking-scheme?${qs.toString()}`, {
+                    method: 'DELETE'
+                  });
+                  if (!res.ok) throw new Error('Failed to delete');
+                  // Clear local state
+                  setSchemes(prev => prev.filter(s => !(s.courseCode === courseCode && s.examType === examType && s.slot === slotValue)));
+                  setSelectedScheme(null);
+                  setEditing(false);
+                  setEditedData(null);
+                  setHasChanges(false);
+                } catch (error) {
+                  console.error('Failed to delete:', error);
+                  alert('Failed to delete. Please try again.');
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+              className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-red-600 to-red-700 shadow-md shadow-red-500/30 hover:shadow-lg hover:shadow-red-500/40 hover:scale-[1.02] transition-all disabled:opacity-50"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-sm">
             <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
               <div className="text-muted-foreground">Course Code</div>
@@ -627,6 +538,441 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
                         originalCourseCode: courseCode,
+                        originalSlot: slotValue,
+                        originalExamType: examType,
+                        courseCode: editedData.courseCode,
+                        slot: editedData.slot,
+                        examType: editedData.examType,
+                        marks,
+                        criteria
+                      })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to update');
+
+                    // Update local state
+                    const updatedScheme: MarkingSchemeData = {
+                      courseCode: editedData.courseCode,
+                      slot: editedData.slot,
+                      examType: editedData.examType,
+                      items: editedData.items
+                    };
+                    setSchemes(prev => prev.map(s =>
+                      s.courseCode === courseCode && s.examType === examType && s.slot === slotValue
+                        ? updatedScheme
+                        : s
+                    ));
+                    setSelectedScheme(updatedScheme);
+
+                    setHasChanges(false);
+                    setEditing(false);
+                    setEditedData(null);
+                  } catch (error) {
+                    console.error('Failed to update:', error);
+                    alert('Failed to update. Please try again.');
+                  } finally {
+                    setUpdating(false);
+                  }
+                }}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  hasChanges
+                    ? 'bg-green-600 hover:bg-green-700 text-white shadow-md'
+                    : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {updating ? 'Updating...' : 'Update Scheme'}
+              </button>
+            </div>
+          )}
+        </>
+      ) : addOpen ? (
+        <div className="rounded-md border border-black/10 dark:border-white/20 p-3 bg-white/50 dark:bg-neutral-900/30">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">Add Marking Scheme</h3>
+            <button
+              type="button"
+              onClick={() => setAddOpen(false)}
+              className="text-xs rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              Close
+            </button>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="min-w-0">
+              <ImageOcr />
+            </div>
+            <div className="min-w-0">
+              <PromptRunner targetModel="MarkingScheme" />
+            </div>
+          </div>
+        </div>
+      ) : manualAddOpen ? (
+        <div className="rounded-md border border-black/10 dark:border-white/20 p-3 bg-white/50 dark:bg-neutral-900/30">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">Manually Add Marking Scheme</h3>
+            <button
+              type="button"
+              onClick={() => setManualAddOpen(false)}
+              className="text-xs rounded-md border border-black/10 dark:border-white/20 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              Close
+            </button>
+          </div>
+          <ManualAddForm slot={slot || undefined} onSuccess={() => {
+            setManualAddOpen(false);
+            // Refresh data
+            if (slot) {
+              // Re-fetch schemes for the slot
+              fetch(`/marking-scheme?slot=${encodeURIComponent(slot)}`, { cache: "no-store" })
+                .then(res => res.json())
+                .then(data => {
+                  setSchemes(data?.items ?? []);
+                  setSelectedScheme(data?.items?.[0] ?? null);
+                })
+                .catch(err => console.error('Failed to refresh schemes:', err));
+            }
+          }} />
+        </div>
+      ) : loading || error || (!selectedScheme && !hasProps) ? (
+        <div className="w-full rounded-md border border-black/10 dark:border-white/20">
+          {loading ? (
+            <div className="px-3 py-2 text-sm"><LoadingDots /></div>
+          ) : error ? (
+            <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400">{error}</div>
+          ) : !slot ? (
+            <div className="px-3 py-2 text-sm">Please Select A Slot</div>
+          ) : schemes.length === 0 ? (
+            <div className="px-3 py-2 text-sm">No Record Found</div>
+          ) : (
+            <div className="px-3 py-2 text-sm">Select a marking scheme from the list below</div>
+          )}
+        </div>
+      ) : schemes.length > 1 && !hasProps ? (
+        <div className="w-full rounded-md border border-black/10 dark:border-white/20">
+          <div className="px-3 py-2 text-sm font-medium">Available Marking Schemes for Slot {slot}:</div>
+          <div className="grid gap-2 p-3">
+            {schemes.map((scheme, idx) => (
+              <div
+                key={`${scheme.courseCode}-${scheme.examType}-${idx}`}
+                className={`rounded-md border p-3 transition-colors ${
+                  selectedScheme?.courseCode === scheme.courseCode && selectedScheme?.examType === scheme.examType
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-black/10 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div
+                    className="text-sm cursor-pointer flex-1"
+                    onClick={() => setSelectedScheme(scheme)}
+                  >
+                    <div><span className="font-medium">Course:</span> {scheme.courseCode}</div>
+                    <div><span className="font-medium">Exam Type:</span> {scheme.examType}</div>
+                    <div><span className="font-medium">Questions:</span> {scheme.items.length}</div>
+                    <div><span className="font-medium">Total Marks:</span> {scheme.items.reduce((sum, i) => sum + (i.marks || 0), 0)}</div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedScheme(scheme);
+                        setEditedData({
+                          courseCode: scheme.courseCode,
+                          slot: scheme.slot,
+                          examType: scheme.examType,
+                          items: [...scheme.items]
+                        });
+                        setEditing(true);
+                      }}
+                      className="text-xs px-2 py-1 text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/30 hover:shadow-lg hover:shadow-purple-500/40 hover:scale-[1.02] transition-all rounded"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deleting}
+                      onClick={async () => {
+                        if (!confirm(`Are you sure you want to delete the marking scheme for ${scheme.courseCode} (${scheme.examType}) in slot ${scheme.slot}?`)) return;
+                        setDeleting(true);
+                        try {
+                          const qs = new URLSearchParams({
+                            courseCode: scheme.courseCode,
+                            slot: scheme.slot,
+                            examType: scheme.examType
+                          });
+                          const res = await fetch(`/marking-scheme?${qs.toString()}`, {
+                            method: 'DELETE'
+                          });
+                          if (!res.ok) throw new Error('Failed to delete');
+                          // Update local state
+                          setSchemes(prev => prev.filter(s => !(s.courseCode === scheme.courseCode && s.examType === scheme.examType && s.slot === scheme.slot)));
+                          if (selectedScheme?.courseCode === scheme.courseCode && selectedScheme?.examType === scheme.examType) {
+                            setSelectedScheme(null);
+                            setEditing(false);
+                            setEditedData(null);
+                            setHasChanges(false);
+                          }
+                        } catch (error) {
+                          console.error('Failed to delete:', error);
+                          alert('Failed to delete. Please try again.');
+                        } finally {
+                          setDeleting(false);
+                        }
+                      }}
+                      className="text-xs px-2 py-1 text-white bg-gradient-to-r from-red-600 to-red-700 shadow-md shadow-red-500/30 hover:shadow-lg hover:shadow-red-500/40 hover:scale-[1.02] transition-all disabled:opacity-50 rounded"
+                    >
+                      {deleting ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-end gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (editing) {
+                  setEditedData(null);
+                  setHasChanges(false);
+                } else {
+                  setEditedData({
+                    courseCode: courseCode || '',
+                    slot: slotValue || '',
+                    examType: examType || '',
+                    items: [...schemeItems]
+                  });
+                }
+                setEditing(!editing);
+              }}
+              className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/30 hover:shadow-lg hover:shadow-purple-500/40 hover:scale-[1.02] transition-all"
+            >
+              {editing ? "Cancel Edit" : "Edit"}
+            </button>
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={async () => {
+                if (!confirm(`Are you sure you want to delete the marking scheme for ${courseCode} (${examType}) in slot ${slotValue}?`)) return;
+                setDeleting(true);
+                try {
+                  const qs = new URLSearchParams({
+                    courseCode: courseCode || '',
+                    slot: slotValue || '',
+                    examType: examType || ''
+                  });
+                  const res = await fetch(`/marking-scheme?${qs.toString()}`, {
+                    method: 'DELETE'
+                  });
+                  if (!res.ok) throw new Error('Failed to delete');
+                  // Clear local state
+                  setSchemes(prev => prev.filter(s => !(s.courseCode === courseCode && s.examType === examType && s.slot === slotValue)));
+                  setSelectedScheme(null);
+                  setEditing(false);
+                  setEditedData(null);
+                  setHasChanges(false);
+                } catch (error) {
+                  console.error('Failed to delete:', error);
+                  alert('Failed to delete. Please try again.');
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+              className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-red-600 to-red-700 shadow-md shadow-red-500/30 hover:shadow-lg hover:shadow-red-500/40 hover:scale-[1.02] transition-all disabled:opacity-50"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-sm">
+            <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
+              <div className="text-muted-foreground">Course Code</div>
+              {editing ? (
+                <input
+                  type="text"
+                  value={editedData?.courseCode || ''}
+                  onChange={(e) => {
+                    setEditedData(prev => prev ? { ...prev, courseCode: e.target.value } : null);
+                    setHasChanges(true);
+                  }}
+                  className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                />
+              ) : (
+                <div className="font-medium">{courseCode}</div>
+              )}
+            </div>
+            <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
+              <div className="text-muted-foreground">Slot</div>
+              {editing ? (
+                <select
+                  value={editedData?.slot || ''}
+                  onChange={(e) => {
+                    setEditedData(prev => prev ? { ...prev, slot: e.target.value } : null);
+                    setHasChanges(true);
+                  }}
+                  className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                >
+                  {SLOTS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="font-medium">{slotValue}</div>
+              )}
+            </div>
+            <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
+              <div className="text-muted-foreground">Exam Type</div>
+              {editing ? (
+                <select
+                  value={editedData?.examType || ''}
+                  onChange={(e) => {
+                    setEditedData(prev => prev ? { ...prev, examType: e.target.value } : null);
+                    setHasChanges(true);
+                  }}
+                  className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                >
+                  <option value="CAT">CAT</option>
+                  <option value="FAT">FAT</option>
+                  <option value="ASSESSMENT">Assessment/Quiz</option>
+                </select>
+              ) : (
+                <div className="font-medium">{examType}</div>
+              )}
+            </div>
+            <div className="rounded-md border border-black/10 dark:border-white/20 p-2">
+              <div className="text-muted-foreground">Total Marks</div>
+              <div className="font-medium">{editing ? (editedData?.items.reduce((sum, i) => sum + (i.marks || 0), 0) || 0) : total}</div>
+            </div>
+          </div>
+
+          <div className="w-full rounded-md border border-black/10 dark:border-white/20">
+            {(editing ? editedData?.items || [] : schemeItems).length === 0 ? (
+              <div className="px-3 py-2 text-sm">No marking items provided</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+                    <th className="px-3 py-2 text-left font-medium w-16">Q#</th>
+                    <th className="px-3 py-2 text-left font-medium">Criteria</th>
+                    <th className="px-3 py-2 text-left font-medium w-24">Marks</th>
+                    {editing && <th className="px-3 py-2 text-left font-medium w-16">Actions</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(editing ? editedData?.items || [] : schemeItems).map((m: MarkSchemeItem) => (
+                    <tr key={m.no} className="border-b border-black/5 dark:border-white/5">
+                      <td className="px-3 py-2 align-top whitespace-nowrap font-medium">{m.no}</td>
+                      <td className="px-3 py-2 align-top">
+                        {editing ? (
+                          <textarea
+                            value={m.criteria || ''}
+                            onChange={(e) => {
+                              const updatedItems = editedData?.items.map(item =>
+                                item.no === m.no ? { ...item, criteria: e.target.value } : item
+                              );
+                              setEditedData(prev => prev ? { ...prev, items: updatedItems || [] } : null);
+                              setHasChanges(true);
+                            }}
+                            className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800 resize-y min-h-[60px]"
+                            rows={2}
+                          />
+                        ) : (
+                          <span className="text-pretty">{m.criteria ?? "—"}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 align-top whitespace-nowrap">
+                        {editing ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="50"
+                            value={m.marks}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              const updatedItems = editedData?.items.map(item =>
+                                item.no === m.no ? { ...item, marks: value } : item
+                              );
+                              setEditedData(prev => prev ? { ...prev, items: updatedItems || [] } : null);
+                              setHasChanges(true);
+                            }}
+                            className="w-16 px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                          />
+                        ) : (
+                          m.marks
+                        )}
+                      </td>
+                      {editing && (
+                        <td className="px-3 py-2 align-top">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updatedItems = editedData?.items.filter(item => item.no !== m.no) || [];
+                              setEditedData(prev => prev ? { ...prev, items: updatedItems } : null);
+                              setHasChanges(true);
+                            }}
+                            className="text-red-600 hover:text-red-800 text-sm px-2 py-1 rounded border border-red-300 hover:border-red-400"
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                  {editing && (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentItems = editedData?.items || [];
+                            const nextNo = Math.max(...currentItems.map(i => i.no), 0) + 1;
+                            const updatedItems = [...currentItems, { no: nextNo, marks: 0, criteria: '' }];
+                            setEditedData(prev => prev ? { ...prev, items: updatedItems } : null);
+                            setHasChanges(true);
+                          }}
+                          className="text-green-600 hover:text-green-800 text-sm px-3 py-1 rounded border border-green-300 hover:border-green-400"
+                        >
+                          + Add Criteria
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+          {editing && (
+            <div className="flex justify-end mt-3">
+              <button
+                type="button"
+                disabled={!hasChanges || updating}
+                onClick={async () => {
+                  if (!editedData || !hasChanges) return;
+
+                  setUpdating(true);
+                  try {
+                    const marks: Record<number, number> = {};
+                    const criteria: Record<number, string> = {};
+
+                    // Clear all fields first
+                    for (let i = 1; i <= 10; i++) {
+                      marks[i] = 0;
+                      criteria[i] = '';
+                    }
+
+                    // Set values for existing items
+                    editedData.items.forEach(item => {
+                      marks[item.no] = item.marks;
+                      criteria[item.no] = item.criteria || '';
+                    });
+
+                    const response = await fetch('/marking-scheme', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        originalCourseCode: courseCode,
+                        originalSlot: slotValue,
                         originalExamType: examType,
                         courseCode: editedData.courseCode,
                         slot: editedData.slot,

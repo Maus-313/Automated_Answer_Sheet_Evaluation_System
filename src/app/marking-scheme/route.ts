@@ -133,9 +133,9 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const { originalCourseCode, originalExamType, courseCode, slot, examType, marks, criteria } = await req.json();
+    const { originalCourseCode, originalSlot, originalExamType, courseCode, slot, examType, marks, criteria } = await req.json();
 
-    if (!originalCourseCode || !originalExamType || !courseCode || !slot || !examType || !marks || !criteria) {
+    if (!originalCourseCode || !originalSlot || !originalExamType || !courseCode || !slot || !examType || !marks || !criteria) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -152,7 +152,7 @@ export async function PUT(req: Request) {
     }
 
     const updated = await prisma.markingScheme.update({
-      where: { courseCode_slot_examType: { courseCode: originalCourseCode, slot, examType: originalExamType } },
+      where: { courseCode_slot_examType: { courseCode: originalCourseCode, slot: originalSlot, examType: originalExamType } },
       data: updateData,
     });
 
