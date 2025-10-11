@@ -26,6 +26,7 @@ export default function QuestionPaper() {
   const [slotFilter, setSlotFilter] = useState<string>("");
   const [addOpen, setAddOpen] = useState(false);
   const [manualAddOpen, setManualAddOpen] = useState(false);
+  const [manualSlot, setManualSlot] = useState<string>("");
   const [editing, setEditing] = useState<Record<string, boolean>>({});
   const [editedMarks, setEditedMarks] = useState<Record<string, Record<number, number>>>({});
   const [editedData, setEditedData] = useState<Record<string, {
@@ -69,8 +70,9 @@ export default function QuestionPaper() {
   const slots = SLOTS;
   const filtered = (items ?? []).filter((i) => (slotFilter ? i.slot === slotFilter : true));
 
-  function ManualAddForm({ slot, onSuccess }: { slot: string; onSuccess: () => void }) {
+  function ManualAddForm({ slot, onSuccess }: { slot?: string; onSuccess: () => void }) {
     const [formData, setFormData] = useState({
+      slot: slot || '',
       courseCode: '',
       examType: '',
       subject: '',
@@ -90,12 +92,13 @@ export default function QuestionPaper() {
         });
         const totalMarks = Object.values(marks).reduce((sum, m) => sum + m, 0);
 
+        const selectedSlot = formData.slot || slot;
         const res = await fetch('/question-paper', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             courseCode: formData.courseCode,
-            slot,
+            slot: selectedSlot,
             examType: formData.examType,
             subject: formData.subject,
             marks,
@@ -114,6 +117,22 @@ export default function QuestionPaper() {
 
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
+        {!slot && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Slot</label>
+            <select
+              required
+              value={formData.slot}
+              onChange={(e) => setFormData(prev => ({ ...prev, slot: e.target.value }))}
+              className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+            >
+              <option value="">Select Slot</option>
+              {SLOTS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Course Code</label>
@@ -252,6 +271,13 @@ export default function QuestionPaper() {
           >
             {addOpen ? "Close Add" : "Add with Image/PDF"}
           </button>
+          <button
+            type="button"
+            onClick={() => setManualAddOpen(true)}
+            className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-green-600 to-emerald-600 shadow-md shadow-green-500/30 hover:shadow-lg hover:shadow-green-500/40 hover:scale-[1.02] transition-all"
+          >
+            Add Manually
+          </button>
         </div>
         <div className="flex items-center gap-2">
           <label htmlFor="qp-slot" className="text-sm text-muted-foreground">Slot</label>
@@ -302,7 +328,7 @@ export default function QuestionPaper() {
               Close
             </button>
           </div>
-          <ManualAddForm slot={slotFilter} onSuccess={() => {
+          <ManualAddForm slot={slotFilter || undefined} onSuccess={() => {
             setManualAddOpen(false);
             // Refresh data
             window.location.reload();
@@ -664,17 +690,6 @@ export default function QuestionPaper() {
               </div>
             );
           })}
-        </div>
-      )}
-      {slotFilter && (
-        <div className="flex justify-center mt-4">
-          <button
-            type="button"
-            onClick={() => setManualAddOpen(true)}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm shadow-md"
-          >
-            + Manually Add Question Paper
-          </button>
         </div>
       )}
     </section>

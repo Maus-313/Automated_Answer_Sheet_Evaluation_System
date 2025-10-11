@@ -32,6 +32,9 @@ export default function MarkSheetTable() {
   const [rowsLoading, setRowsLoading] = useState(true);
   const [rowsError, setRowsError] = useState<string | null>(null);
   const [slotFilter, setSlotFilter] = useState<string>("");
+  const [editing, setEditing] = useState<Record<string, boolean>>({});
+  const [editedMarks, setEditedMarks] = useState<Record<string, Record<number, number>>>({});
+  const [updating, setUpdating] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +84,7 @@ export default function MarkSheetTable() {
           <th className="px-3 py-2 text-left text-sm font-medium">Ans 8</th>
           <th className="px-3 py-2 text-left text-sm font-medium">Ans 9</th>
           <th className="px-3 py-2 text-left text-sm font-medium">Ans 10</th>
+          <th className="px-3 py-2 text-left text-sm font-medium">Actions</th>
         </tr>
       </thead>
     ),
@@ -143,25 +147,112 @@ export default function MarkSheetTable() {
           <table className="w-full text-sm">
             {header}
             <tbody>
-              {filtered.map((r) => (
-                <tr key={r.rollNo} className="border-b border-black/5 dark:border-white/5">
-                  <td className="px-3 py-2 align-top whitespace-nowrap">{r.rollNo}</td>
-                  <td className="px-3 py-2 align-top">{r.name}</td>
-                  <td className="px-3 py-2 align-top">{r.slot}</td>
-                  <td className="px-3 py-2 align-top">{r.examType}</td>
-                  <td className="px-3 py-2 align-top">{r.totalMarks}</td>
-                  <td className="px-3 py-2 align-top">{r.answer1 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer2 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer3 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer4 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer5 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer6 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer7 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer8 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer9 ?? "-"}</td>
-                  <td className="px-3 py-2 align-top">{r.answer10 ?? "-"}</td>
-                </tr>
-              ))}
+              {filtered.map((r) => {
+                const isEditing = editing[r.rollNo];
+                return (
+                  <tr key={r.rollNo} className="border-b border-black/5 dark:border-white/5">
+                    <td className="px-3 py-2 align-top whitespace-nowrap">{r.rollNo}</td>
+                    <td className="px-3 py-2 align-top">{r.name}</td>
+                    <td className="px-3 py-2 align-top">{r.slot}</td>
+                    <td className="px-3 py-2 align-top">{r.examType}</td>
+                    <td className="px-3 py-2 align-top">
+                      {isEditing
+                        ? [1,2,3,4,5,6,7,8,9,10].reduce((sum, i) => sum + (editedMarks[r.rollNo]?.[i] ?? (r[`answer${i}` as keyof MarkingSheet] as number ?? 0)), 0)
+                        : r.totalMarks
+                      }
+                    </td>
+                    {[r.answer1, r.answer2, r.answer3, r.answer4, r.answer5, r.answer6, r.answer7, r.answer8, r.answer9, r.answer10].map((ans, idx) => (
+                      <td key={idx} className="px-3 py-2 align-top">
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="50"
+                            value={editedMarks[r.rollNo]?.[idx + 1] ?? (ans ?? 0)}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              setEditedMarks(prev => ({
+                                ...prev,
+                                [r.rollNo]: { ...prev[r.rollNo], [idx + 1]: value }
+                              }));
+                            }}
+                            className="w-12 px-1 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+                          />
+                        ) : (
+                          ans ?? "-"
+                        )}
+                      </td>
+                    ))}
+                    <td className="px-3 py-2 align-top">
+                      {isEditing ? (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={updating[r.rollNo]}
+                            onClick={async () => {
+                              setUpdating(prev => ({ ...prev, [r.rollNo]: true }));
+                              try {
+                                const updates: Record<string, number | null> = {};
+                                for (let i = 1; i <= 10; i++) {
+                                  updates[`answer${i}`] = editedMarks[r.rollNo]?.[i] ?? r[`answer${i}` as keyof MarkingSheet] as number ?? null;
+                                }
+                                const res = await fetch('/marking-sheets', {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    rollNo: r.rollNo,
+                                    ...updates
+                                  })
+                                });
+                                if (!res.ok) throw new Error('Failed to update');
+                                const data = await res.json();
+                                // Update local state
+                                setRows(prev => prev ? prev.map(row => row.rollNo === r.rollNo ? data.item : row) : null);
+                                setEditing(prev => ({ ...prev, [r.rollNo]: false }));
+                                setEditedMarks(prev => {
+                                  const newState = { ...prev };
+                                  delete newState[r.rollNo];
+                                  return newState;
+                                });
+                              } catch (error) {
+                                console.error('Failed to update:', error);
+                                alert('Failed to update. Please try again.');
+                              } finally {
+                                setUpdating(prev => ({ ...prev, [r.rollNo]: false }));
+                              }
+                            }}
+                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm disabled:opacity-50"
+                          >
+                            {updating[r.rollNo] ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditing(prev => ({ ...prev, [r.rollNo]: false }));
+                              setEditedMarks(prev => {
+                                const newState = { ...prev };
+                                delete newState[r.rollNo];
+                                return newState;
+                              });
+                            }}
+                            className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setEditing(prev => ({ ...prev, [r.rollNo]: true }))}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -42,6 +42,7 @@ export default function AnswerSheetTable() {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [addOpen, setAddOpen] = useState(false);
   const [manualAddOpen, setManualAddOpen] = useState(false);
+  const [manualSlot, setManualSlot] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -65,8 +66,9 @@ export default function AnswerSheetTable() {
 
   const filtered = useMemo(() => (rows ?? []).filter((r) => (slotFilter ? r.slot === slotFilter : true)), [rows, slotFilter]);
 
-  function ManualAddForm({ slot, onSuccess }: { slot: string; onSuccess: () => void }) {
+  function ManualAddForm({ slot, onSuccess }: { slot?: string; onSuccess: () => void }) {
     const [formData, setFormData] = useState({
+      slot: slot || '',
       rollNo: '',
       name: '',
       examType: '',
@@ -83,13 +85,14 @@ export default function AnswerSheetTable() {
           answerData[`answer${ans.no}`] = ans.text || null;
         });
 
+        const selectedSlot = formData.slot || slot;
         const res = await fetch('/answers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             rollNo: formData.rollNo,
             name: formData.name,
-            slot,
+            slot: selectedSlot,
             examType: formData.examType,
             ...answerData
           })
@@ -105,6 +108,22 @@ export default function AnswerSheetTable() {
 
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
+        {!slot && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Slot</label>
+            <select
+              required
+              value={formData.slot}
+              onChange={(e) => setFormData(prev => ({ ...prev, slot: e.target.value }))}
+              className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+            >
+              <option value="">Select Slot</option>
+              {SLOTS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Roll No</label>
@@ -229,6 +248,13 @@ export default function AnswerSheetTable() {
           >
             {addOpen ? "Close Add" : "Add with Image/PDF"}
           </button>
+          <button
+            type="button"
+            onClick={() => setManualAddOpen(true)}
+            className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-green-600 to-emerald-600 shadow-md shadow-green-500/30 hover:shadow-lg hover:shadow-green-500/40 hover:scale-[1.02] transition-all"
+          >
+            Add Manually
+          </button>
         </div>
         <div className="flex items-center gap-2">
           <label htmlFor="as-slot" className="text-sm text-muted-foreground">Slot</label>
@@ -279,7 +305,7 @@ export default function AnswerSheetTable() {
               Close
             </button>
           </div>
-          <ManualAddForm slot={slotFilter} onSuccess={() => {
+          <ManualAddForm slot={slotFilter || undefined} onSuccess={() => {
             setManualAddOpen(false);
             // Refresh data
             window.location.reload();
@@ -344,17 +370,6 @@ export default function AnswerSheetTable() {
                 </div>
               );
             })}
-            {slotFilter && (
-              <div className="flex justify-center mt-4">
-                <button
-                  type="button"
-                  onClick={() => setManualAddOpen(true)}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm shadow-md"
-                >
-                  + Manually Add Answer Sheet
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>

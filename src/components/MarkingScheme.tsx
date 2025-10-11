@@ -30,6 +30,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
   const [slot, setSlot] = useState<string>("");
   const [addOpen, setAddOpen] = useState(false);
   const [manualAddOpen, setManualAddOpen] = useState(false);
+  const [manualSlot, setManualSlot] = useState<string>("");
   const [editing, setEditing] = useState(false);
   const [editedData, setEditedData] = useState<{
     courseCode: string;
@@ -75,8 +76,9 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
   const items = item?.items ?? props.items ?? [];
   const total = useMemo(() => items.reduce((sum, i) => sum + (i.marks || 0), 0), [items]);
 
-  function ManualAddForm({ slot, onSuccess }: { slot: string; onSuccess: () => void }) {
+  function ManualAddForm({ slot, onSuccess }: { slot?: string; onSuccess: () => void }) {
     const [formData, setFormData] = useState({
+      slot: slot || '',
       courseCode: '',
       examType: '',
       items: [{ no: 1, marks: 0, criteria: '' }]
@@ -94,12 +96,13 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
           criteria[item.no] = item.criteria;
         });
 
+        const selectedSlot = formData.slot || slot;
         const res = await fetch('/marking-scheme', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             courseCode: formData.courseCode,
-            slot,
+            slot: selectedSlot,
             examType: formData.examType,
             marks,
             criteria
@@ -116,6 +119,22 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
 
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
+        {!slot && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Slot</label>
+            <select
+              required
+              value={formData.slot}
+              onChange={(e) => setFormData(prev => ({ ...prev, slot: e.target.value }))}
+              className="w-full px-2 py-1 text-sm border border-black/20 dark:border-white/30 rounded bg-white dark:bg-neutral-800"
+            >
+              <option value="">Select Slot</option>
+              {SLOTS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Course Code</label>
@@ -297,6 +316,13 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
           >
             {addOpen ? "Close Add" : "Add with Image/PDF"}
           </button>
+          <button
+            type="button"
+            onClick={() => setManualAddOpen(true)}
+            className="text-xs sm:text-sm rounded-md px-3 py-1.5 text-white bg-gradient-to-r from-green-600 to-emerald-600 shadow-md shadow-green-500/30 hover:shadow-lg hover:shadow-green-500/40 hover:scale-[1.02] transition-all"
+          >
+            Add Manually
+          </button>
         </div>
         {!hasProps ? (
           <div className="flex items-center gap-2">
@@ -349,7 +375,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
               Close
             </button>
           </div>
-          <ManualAddForm slot={slot} onSuccess={() => {
+          <ManualAddForm slot={slot || undefined} onSuccess={() => {
             setManualAddOpen(false);
             // Refresh data
             window.location.reload();
@@ -597,17 +623,6 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
             </div>
           )}
         </>
-      )}
-      {slot && (
-        <div className="flex justify-center mt-4">
-          <button
-            type="button"
-            onClick={() => setManualAddOpen(true)}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm shadow-md"
-          >
-            + Manually Add Marking Scheme
-          </button>
-        </div>
       )}
     </section>
   );
