@@ -10,47 +10,85 @@ export async function GET(req: Request) {
     const slot = searchParams.get("slot")?.trim();
     const courseCode = searchParams.get("courseCode")?.trim() || undefined;
     const examType = searchParams.get("examType")?.trim() || undefined;
-    let ms: any = null;
-    if (slot || courseCode || examType) {
+
+    if (courseCode && examType) {
+      // Specific marking scheme request
       try {
-        // Cast to any to tolerate older Prisma Client types until migration is applied
-        ms = await prisma.markingScheme.findFirst({
-          where: { ...(slot ? { slot } : {}), ...(courseCode ? { courseCode } : {}), ...(examType ? { examType: examType as any } : {}) } as any,
+        const ms = await prisma.markingScheme.findFirst({
+          where: { courseCode, slot, examType: examType as any } as any,
+        });
+
+        if (!ms) return NextResponse.json({ item: null });
+
+        const marks = [
+          ms.mark1, ms.mark2, ms.mark3, ms.mark4, ms.mark5,
+          ms.mark6, ms.mark7, ms.mark8, ms.mark9, ms.mark10,
+        ];
+        const criteria = [
+          ms.criteria1, ms.criteria2, ms.criteria3, ms.criteria4, ms.criteria5,
+          ms.criteria6, ms.criteria7, ms.criteria8, ms.criteria9, ms.criteria10,
+        ];
+
+        const items = marks
+          .map((m, i) => ({ no: i + 1, marks: m ?? undefined, criteria: criteria[i] ?? undefined }))
+          .filter((it) => typeof it.marks === "number");
+
+        return NextResponse.json({
+          item: {
+            courseCode: ms.courseCode,
+            slot: ms.slot,
+            examType: ms.examType,
+            items,
+          },
         });
       } catch (e: any) {
         const msg = String(e?.message ?? "");
-        if (msg.includes("Unknown argument `slot`")) {
-          // Schema not migrated yet; report no record instead of error
+        if (msg.includes("Unknown argument")) {
           return NextResponse.json({ item: null });
         }
         throw e;
       }
+    } else if (slot) {
+      // List all marking schemes for the slot
+      try {
+        const markingSchemes = await prisma.markingScheme.findMany({
+          where: { slot } as any,
+        });
+
+        const items = markingSchemes.map(ms => {
+          const marks = [
+            ms.mark1, ms.mark2, ms.mark3, ms.mark4, ms.mark5,
+            ms.mark6, ms.mark7, ms.mark8, ms.mark9, ms.mark10,
+          ];
+          const criteria = [
+            ms.criteria1, ms.criteria2, ms.criteria3, ms.criteria4, ms.criteria5,
+            ms.criteria6, ms.criteria7, ms.criteria8, ms.criteria9, ms.criteria10,
+          ];
+
+          const schemeItems = marks
+            .map((m, i) => ({ no: i + 1, marks: m ?? undefined, criteria: criteria[i] ?? undefined }))
+            .filter((it) => typeof it.marks === "number");
+
+          return {
+            courseCode: ms.courseCode,
+            slot: ms.slot,
+            examType: ms.examType,
+            items: schemeItems,
+          };
+        });
+
+        return NextResponse.json({ items });
+      } catch (e: any) {
+        const msg = String(e?.message ?? "");
+        if (msg.includes("Unknown argument")) {
+          return NextResponse.json({ items: [] });
+        }
+        throw e;
+      }
     } else {
-      ms = await prisma.markingScheme.findFirst();
+      // No filters - return empty
+      return NextResponse.json({ items: [] });
     }
-    if (!ms) return NextResponse.json({ item: null });
-
-    const marks = [
-      ms.mark1, ms.mark2, ms.mark3, ms.mark4, ms.mark5,
-      ms.mark6, ms.mark7, ms.mark8, ms.mark9, ms.mark10,
-    ];
-    const criteria = [
-      ms.criteria1, ms.criteria2, ms.criteria3, ms.criteria4, ms.criteria5,
-      ms.criteria6, ms.criteria7, ms.criteria8, ms.criteria9, ms.criteria10,
-    ];
-
-    const items = marks
-      .map((m, i) => ({ no: i + 1, marks: m ?? undefined, criteria: criteria[i] ?? undefined }))
-      .filter((it) => typeof it.marks === "number");
-
-    return NextResponse.json({
-      item: {
-        courseCode: ms.courseCode,
-        slot: ms.slot,
-        examType: ms.examType,
-        items,
-      },
-    });
   } catch (err: any) {
     console.error("GET /marking-scheme error", err);
     return NextResponse.json(

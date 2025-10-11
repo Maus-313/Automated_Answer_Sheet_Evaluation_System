@@ -10,6 +10,12 @@ const SLOTS = [
 ];
 
 type MarkSchemeItem = { no: number; marks: number; criteria?: string };
+type MarkingSchemeData = {
+  courseCode: string;
+  slot: string;
+  examType: "CAT" | "FAT" | "ASSESSMENT" | string;
+  items: MarkSchemeItem[];
+};
 type MarkingSchemeProps = Partial<{
   courseCode: string;
   examType: "CAT" | "FAT" | "ASSESSMENT" | string;
@@ -18,16 +24,12 @@ type MarkingSchemeProps = Partial<{
 
 export default function MarkingScheme(props: MarkingSchemeProps) {
   const hasProps = !!props?.courseCode || !!props?.items?.length;
-  const [item, setItem] = useState<{
-    courseCode?: string;
-    slot?: string;
-    examType?: "CAT" | "FAT" | "ASSESSMENT" | string;
-    items: MarkSchemeItem[];
-  } | null>(hasProps ? { courseCode: props.courseCode, examType: props.examType, items: props.items || [] } : null);
+  const [schemes, setSchemes] = useState<MarkingSchemeData[]>(hasProps ? [{ courseCode: props.courseCode!, slot: '', examType: props.examType!, items: props.items || [] }] : []);
 
   const [loading, setLoading] = useState(!hasProps);
   const [error, setError] = useState<string | null>(null);
   const [slot, setSlot] = useState<string>("");
+  const [selectedScheme, setSelectedScheme] = useState<MarkingSchemeData | null>(hasProps ? { courseCode: props.courseCode!, slot: '', examType: props.examType!, items: props.items || [] } : null);
   const [addOpen, setAddOpen] = useState(false);
   const [manualAddOpen, setManualAddOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -50,7 +52,8 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
         setLoading(true);
         if (!slot) {
           // Wait for a slot selection
-          setItem(null);
+          setSchemes([]);
+          setSelectedScheme(null);
           setLoading(false);
           return;
         }
@@ -58,7 +61,10 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
         const res = await fetch(`/marking-scheme${qs}`, { cache: "no-store" });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error || "Failed to load marking scheme");
-        if (!cancelled) setItem(data?.item ?? null);
+        if (!cancelled) {
+          setSchemes(data?.items ?? []);
+          setSelectedScheme(data?.items?.[0] ?? null);
+        }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || "Failed to load marking scheme");
       } finally {
@@ -70,11 +76,11 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
     };
   }, [hasProps, slot]);
 
-  const courseCode = item?.courseCode ?? props.courseCode;
-  const slotValue = item?.slot ?? slot;
-  const examType = item?.examType ?? props.examType;
-  const items = item?.items ?? props.items ?? [];
-  const total = useMemo(() => items.reduce((sum, i) => sum + (i.marks || 0), 0), [items]);
+  const courseCode = selectedScheme?.courseCode ?? props.courseCode;
+  const slotValue = selectedScheme?.slot ?? slot;
+  const examType = selectedScheme?.examType ?? props.examType;
+  const schemeItems = selectedScheme?.items ?? props.items ?? [];
+  const total = useMemo(() => schemeItems.reduce((sum: number, i: MarkSchemeItem) => sum + (i.marks || 0), 0), [schemeItems]);
 
   function ManualAddForm({ slot, onSuccess }: { slot?: string; onSuccess: () => void }) {
     const [formData, setFormData] = useState({
@@ -256,7 +262,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">Marking Scheme</h2>
-          {item && (
+          {selectedScheme && (
             <button
               type="button"
               onClick={() => {
@@ -268,7 +274,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
                     courseCode: courseCode || '',
                     slot: slotValue || '',
                     examType: examType || '',
-                    items: [...items]
+                    items: [...schemeItems]
                   });
                 }
                 setEditing(!editing);
@@ -278,7 +284,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
               {editing ? "Cancel Edit" : "Edit"}
             </button>
           )}
-          {item && (
+          {selectedScheme && (
             <button
               type="button"
               disabled={deleting}
@@ -296,7 +302,10 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
                   });
                   if (!res.ok) throw new Error('Failed to delete');
                   // Clear local state
-                  setItem(null);
+                  setSchemes(prev => prev.filter(s => !(s.courseCode === courseCode && s.examType === examType && s.slot === slotValue)));
+                  if (selectedScheme?.courseCode === courseCode && selectedScheme?.examType === examType) {
+                    setSelectedScheme(schemes.length > 1 ? schemes[0] : null);
+                  }
                 } catch (error) {
                   console.error('Failed to delete:', error);
                   alert('Failed to delete. Please try again.');
@@ -378,11 +387,20 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
           <ManualAddForm slot={slot || undefined} onSuccess={() => {
             setManualAddOpen(false);
             // Refresh data
-            window.location.reload();
+            if (slot) {
+              // Re-fetch schemes for the slot
+              fetch(`/marking-scheme?slot=${encodeURIComponent(slot)}`, { cache: "no-store" })
+                .then(res => res.json())
+                .then(data => {
+                  setSchemes(data?.items ?? []);
+                  setSelectedScheme(data?.items?.[0] ?? null);
+                })
+                .catch(err => console.error('Failed to refresh schemes:', err));
+            }
           }} />
         </div>
       )}
-      {loading || error || !item && !hasProps ? (
+      {loading || error || (!selectedScheme && !hasProps) ? (
         <div className="w-full rounded-md border border-black/10 dark:border-white/20">
           {loading ? (
             <div className="px-3 py-2 text-sm"><LoadingDots /></div>
@@ -390,9 +408,35 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
             <div className="px-3 py-2 text-sm text-red-600 dark:text-red-400">{error}</div>
           ) : !slot ? (
             <div className="px-3 py-2 text-sm">Please Select A Slot</div>
-          ) : (
+          ) : schemes.length === 0 ? (
             <div className="px-3 py-2 text-sm">No Record Found</div>
+          ) : (
+            <div className="px-3 py-2 text-sm">Select a marking scheme from the list below</div>
           )}
+        </div>
+      ) : schemes.length > 1 && !hasProps ? (
+        <div className="w-full rounded-md border border-black/10 dark:border-white/20">
+          <div className="px-3 py-2 text-sm font-medium">Available Marking Schemes for Slot {slot}:</div>
+          <div className="grid gap-2 p-3">
+            {schemes.map((scheme, idx) => (
+              <div
+                key={`${scheme.courseCode}-${scheme.examType}-${idx}`}
+                className={`rounded-md border p-3 cursor-pointer transition-colors ${
+                  selectedScheme?.courseCode === scheme.courseCode && selectedScheme?.examType === scheme.examType
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-black/10 dark:border-white/20 hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+                onClick={() => setSelectedScheme(scheme)}
+              >
+                <div className="text-sm">
+                  <div><span className="font-medium">Course:</span> {scheme.courseCode}</div>
+                  <div><span className="font-medium">Exam Type:</span> {scheme.examType}</div>
+                  <div><span className="font-medium">Questions:</span> {scheme.items.length}</div>
+                  <div><span className="font-medium">Total Marks:</span> {scheme.items.reduce((sum, i) => sum + (i.marks || 0), 0)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <>
@@ -458,7 +502,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
           </div>
 
           <div className="w-full rounded-md border border-black/10 dark:border-white/20">
-            {(editing ? editedData?.items || [] : items).length === 0 ? (
+            {(editing ? editedData?.items || [] : schemeItems).length === 0 ? (
               <div className="px-3 py-2 text-sm">No marking items provided</div>
             ) : (
               <table className="w-full text-sm">
@@ -471,7 +515,7 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {(editing ? editedData?.items || [] : items).map((m) => (
+                  {(editing ? editedData?.items || [] : schemeItems).map((m: MarkSchemeItem) => (
                     <tr key={m.no} className="border-b border-black/5 dark:border-white/5">
                       <td className="px-3 py-2 align-top whitespace-nowrap font-medium">{m.no}</td>
                       <td className="px-3 py-2 align-top">
@@ -595,12 +639,18 @@ export default function MarkingScheme(props: MarkingSchemeProps) {
                     if (!response.ok) throw new Error('Failed to update');
 
                     // Update local state
-                    setItem({
+                    const updatedScheme: MarkingSchemeData = {
                       courseCode: editedData.courseCode,
                       slot: editedData.slot,
                       examType: editedData.examType,
                       items: editedData.items
-                    });
+                    };
+                    setSchemes(prev => prev.map(s =>
+                      s.courseCode === courseCode && s.examType === examType && s.slot === slotValue
+                        ? updatedScheme
+                        : s
+                    ));
+                    setSelectedScheme(updatedScheme);
 
                     setHasChanges(false);
                     setEditing(false);
