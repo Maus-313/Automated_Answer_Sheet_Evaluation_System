@@ -20,7 +20,7 @@ The application is built as a full-stack web application using modern web techno
 - **Runtime**: Next.js API Routes (Node.js)
 - **Database**: PostgreSQL
 - **ORM**: Prisma
-- **AI Service**: Google Gemini AI (Gemini 2.0 Flash)
+- **AI Services**: Google Gemini AI (Gemini 2.0 Flash), Google Vision API (Flash 2.5)
 
 ### Development & Testing
 - **Testing**: Jest, React Testing Library, Playwright (E2E)
@@ -38,29 +38,54 @@ The application is built as a full-stack web application using modern web techno
 ```mermaid
 graph TB
     subgraph "Client Layer"
-        UI[Web UI<br/>Next.js + React]
+        UI[Web UI<br/>Next.js + React<br/>Components & Pages]
     end
 
     subgraph "Application Layer"
-        API[API Routes<br/>Next.js]
-        AI[AI Service<br/>Google Gemini]
+        subgraph "API Routes"
+            QP[Question Paper<br/>CRUD API]
+            MS[Marking Scheme<br/>CRUD API]
+            AS[Answer Sheet<br/>CRUD API]
+            EVAL[Evaluation<br/>API]
+            OCR[Vision OCR<br/>API]
+        end
+
+        subgraph "AI Services"
+            GEMINI[Gemini AI<br/>Text Processing]
+            VISION[Vision AI<br/>OCR Processing]
+        end
+
+        subgraph "Business Logic"
+            PRISMA[Prisma Client<br/>Database Operations]
+        end
     end
 
     subgraph "Data Layer"
         DB[(PostgreSQL<br/>Database)]
-        Prisma[Prisma ORM]
     end
 
-    UI --> API
-    API --> AI
-    API --> Prisma
-    Prisma --> DB
+    UI --> QP
+    UI --> MS
+    UI --> AS
+    UI --> EVAL
+    UI --> OCR
+
+    QP --> PRISMA
+    MS --> PRISMA
+    AS --> PRISMA
+    EVAL --> GEMINI
+    EVAL --> PRISMA
+    OCR --> VISION
+
+    PRISMA --> DB
 
     subgraph "External Services"
-        Gemini[Google Gemini AI API]
+        GeminiAPI[Google Gemini AI<br/>gemini-2.0-flash-001]
+        VisionAPI[Google Vision API<br/>Flash 2.5]
     end
 
-    AI --> Gemini
+    GEMINI --> GeminiAPI
+    VISION --> VisionAPI
 ```
 
 ## Core Components
@@ -110,7 +135,7 @@ graph TB
 - `GET /marking-sheets` - Retrieve evaluation results
 
 #### Utility Routes
-- `POST /api/vision-ocr` - OCR processing for image-based documents
+- `POST /api/vision-ocr` - OCR processing for image-based documents using Google Vision API
 
 ## Database Schema
 
@@ -205,10 +230,17 @@ model MarkingSheet {
 ## AI Integration
 
 ### Document Parsing
-The system uses Google Gemini AI to parse various document formats:
+The system uses multiple AI services for document processing:
+
+**Google Gemini AI (Text Processing):**
 - Question papers (extract questions and marks)
 - Marking schemes (extract criteria and marks)
 - Answer sheets (extract student responses)
+
+**Google Vision API (OCR Processing):**
+- Image-based documents and scanned papers
+- Handwritten text recognition
+- Document structure analysis
 
 ### Automated Evaluation
 - Constructs detailed prompts with question text, student answers, and marking criteria
