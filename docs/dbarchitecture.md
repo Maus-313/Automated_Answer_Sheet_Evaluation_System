@@ -2,13 +2,13 @@
 
 ```mermaid
 erDiagram
-    QuestionPaper ||--o{ MarkingScheme : "references"
-    QuestionPaper ||--o{ AnswerSheet : "references"
-    QuestionPaper ||--o{ MarkingSheet : "references"
+    QuestionPaper ||--o{ MarkingScheme : "same courseCode, slot, examType"
+    QuestionPaper ||--o{ AnswerSheet : "same slot, examType"
+    QuestionPaper ||--o{ MarkingSheet : "same slot, examType"
 
-    MarkingScheme ||--o{ MarkingSheet : "used_for"
+    MarkingScheme ||--o{ MarkingSheet : "same courseCode, slot, examType"
 
-    AnswerSheet ||--|| MarkingSheet : "evaluates_to"
+    AnswerSheet ||--|| MarkingSheet : "same rollNo"
 
     QuestionPaper {
         string id PK
